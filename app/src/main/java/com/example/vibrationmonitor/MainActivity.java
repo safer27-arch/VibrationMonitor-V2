@@ -611,10 +611,10 @@ public class MainActivity extends Activity implements SensorEventListener {
         headerBg.setColor(navy); headerBg.setCornerRadius(22*den);
         header.setBackground(headerBg);
         header.setPadding((int)(18*den),(int)(12*den),(int)(12*den),(int)(12*den));
-        title.setText("VIBRATION\nMONITOR"); title.setTextSize(22); title.setTextColor(Color.WHITE);
+        title.setText("VIBRATION MONITOR"); title.setTextSize(27); title.setTextColor(Color.WHITE); title.setSingleLine(true); title.setGravity(Gravity.CENTER);
         title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        logo.setBackgroundColor(Color.WHITE); logo.setPadding((int)(8*den),(int)(5*den),(int)(8*den),(int)(5*den));
-        root.addView(header,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(82*den)));
+        logo.setBackgroundColor(Color.WHITE); logo.setPadding((int)(12*den),(int)(3*den),(int)(12*den),(int)(3*den)); LinearLayout.LayoutParams lpLogo=(LinearLayout.LayoutParams)logo.getLayoutParams(); if(lpLogo!=null){lpLogo.width=(int)(190*den);lpLogo.height=(int)(38*den);lpLogo.gravity=Gravity.CENTER;logo.setLayoutParams(lpLogo);}
+        header.setOrientation(LinearLayout.VERTICAL); header.setGravity(Gravity.CENTER); root.addView(header,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(100*den)));
 
         TextView sub=new TextView(this);
         sub.setText("REAL-TIME 3-AXIS CONDITION MONITORING"); sub.setTextSize(11); sub.setTextColor(muted);
