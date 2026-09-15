@@ -120,14 +120,12 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        float den=getResources().getDisplayMetrics().density;
-        int pad=(int)(10*den);
-        root.setPadding(pad,(int)(8*den),pad,(int)(18*den));
+        root.setPadding(30, 25, 30, 30);
         root.setBackgroundColor(Color.rgb(244,247,250));
 
         TextView title = new TextView(this);
-        title.setText("VIBRATION MONITOR");
-        title.setTextSize(25);
+        title.setText("Vibration Monitor");
+        title.setTextSize(28);
         title.setTextColor(Color.BLACK);
         title.setGravity(Gravity.CENTER);
 
@@ -254,13 +252,13 @@ public class MainActivity extends Activity implements SensorEventListener {
                 graph,
                 new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
-                        (int)(235*den)
+                        600
                 )
         );
 
-        currentText = createValueText("TOTAL VIBRATION     0.000 m/s²");
-        currentText.setTextSize(21); currentText.setTextColor(Color.WHITE); currentText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        android.graphics.drawable.GradientDrawable tb=new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,new int[]{Color.rgb(14,65,100),Color.rgb(18,119,142)}); tb.setCornerRadius(16*den); currentText.setBackground(tb); currentText.setPadding((int)(14*den),(int)(14*den),(int)(14*den),(int)(14*den));
+        currentText = createValueText(
+                "현재값 : 0.000 m/s²"
+        );
         avgText = createValueText(
                 "평균값 : 0.000 m/s²"
         );
@@ -274,9 +272,9 @@ public class MainActivity extends Activity implements SensorEventListener {
         axisSummaryText = createValueText(
                 "X  0.000   Y  0.000   Z  0.000   TOTAL  0.000 m/s²"
         );
-        axisSummaryText.setTextSize(14); axisSummaryText.setPadding((int)(12*den),(int)(10*den),(int)(12*den),(int)(10*den));
+        axisSummaryText.setTextSize(18);
         directionText = createValueText("주 진동 방향 : -");
-        directionText.setTextSize(14); directionText.setGravity(Gravity.CENTER); directionText.setTextColor(Color.rgb(0,105,125));
+        directionText.setTextSize(18);
         samplingText = createValueText("Sampling : 0.0 Hz");
         samplingText.setTextSize(15);
 
@@ -435,29 +433,30 @@ public class MainActivity extends Activity implements SensorEventListener {
         );
 
         LinearLayout header = new LinearLayout(this);
-        header.setOrientation(LinearLayout.VERTICAL);
-        header.setGravity(Gravity.CENTER);
-        header.setPadding((int)(10*den),(int)(9*den),(int)(10*den),(int)(8*den));
-        android.graphics.drawable.GradientDrawable hb=new android.graphics.drawable.GradientDrawable();
-        hb.setColor(Color.rgb(20,48,74)); hb.setCornerRadius(18*den); header.setBackground(hb);
-        title.setText("VIBRATION MONITOR"); title.setTextSize(25); title.setTextColor(Color.WHITE); title.setGravity(Gravity.CENTER); title.setSingleLine(true); title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        header.addView(title,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(39*den)));
-        android.widget.ImageView logo=new android.widget.ImageView(this); logo.setImageResource(com.example.vibrationmonitor.R.drawable.lges_logo); logo.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
-        android.graphics.drawable.GradientDrawable lb=new android.graphics.drawable.GradientDrawable(); lb.setColor(Color.WHITE); lb.setCornerRadius(8*den); logo.setBackground(lb);
-        LinearLayout.LayoutParams llp=new LinearLayout.LayoutParams((int)(170*den),(int)(34*den)); llp.gravity=Gravity.CENTER; llp.topMargin=(int)(3*den); header.addView(logo,llp);
-        root.addView(header,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(88*den)));
-        LinearLayout statusCard=new LinearLayout(this); statusCard.setOrientation(LinearLayout.VERTICAL); statusCard.setPadding((int)(12*den),(int)(8*den),(int)(12*den),(int)(8*den));
-        android.graphics.drawable.GradientDrawable sb=new android.graphics.drawable.GradientDrawable(); sb.setColor(Color.WHITE); sb.setCornerRadius(14*den); statusCard.setBackground(sb);
-        sensorStatus.setTextSize(12); sensorStatus.setGravity(Gravity.START); sensorStatus.setPadding(0,0,0,2); locationText.setTextSize(11); locationText.setGravity(Gravity.START); locationText.setPadding(0,0,0,2); cameraText.setTextSize(11); cameraText.setGravity(Gravity.START); cameraText.setPadding(0,0,0,0);
-        statusCard.addView(sensorStatus); statusCard.addView(locationText); statusCard.addView(cameraText); LinearLayout.LayoutParams slp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT); slp.setMargins(0,(int)(7*den),0,(int)(7*den)); root.addView(statusCard,slp);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setPadding(18, 14, 12, 14);
+        header.setBackgroundColor(Color.WHITE);
+        title.setTextColor(Color.rgb(25,45,65));
+        title.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);
+        header.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        android.widget.ImageView logo = new android.widget.ImageView(this);
+        logo.setImageResource(com.example.vibrationmonitor.R.drawable.lges_logo);
+        logo.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
+        header.addView(logo, new LinearLayout.LayoutParams((int)(190*getResources().getDisplayMetrics().density), (int)(52*getResources().getDisplayMetrics().density)));
+        root.addView(header);
+        root.addView(sensorStatus);
+        root.addView(locationText);
+        root.addView(cameraText);
 
         // 그래프가 제목 바로 아래 보이도록 순서 조정
         root.removeView(graph);
         root.addView(
                 graph,
+                4,
                 new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
-                        (int)(235*den)
+                        600
                 )
         );
 
@@ -475,7 +474,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         for (String m : modeNames) {
             Button b = new Button(this);
             b.setText(m);
-            b.setTextSize(10);
+            b.setTextSize(12);
             b.setAllCaps(false);
             b.setOnClickListener(v -> graph.setMode(m));
             graphModes.addView(b, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -599,97 +598,97 @@ public class MainActivity extends Activity implements SensorEventListener {
         root.addView(historyButton);
 
         // ===== V2.1 INDUSTRIAL DASHBOARD =====
-        final float uiDen = getResources().getDisplayMetrics().density;
+        final float den = getResources().getDisplayMetrics().density;
         final int navy=Color.rgb(18,35,52), ink=Color.rgb(28,42,55), muted=Color.rgb(103,119,133);
         final int green=Color.rgb(0,153,112), blue=Color.rgb(35,105,170), red=Color.rgb(205,68,72);
         final int purple=Color.rgb(111,71,170), soft=Color.rgb(238,243,247);
 
         root.removeAllViews();
-        root.setPadding((int)(14*uiDen),(int)(10*uiDen),(int)(14*uiDen),(int)(110*uiDen));
+        root.setPadding((int)(14*den),(int)(10*den),(int)(14*den),(int)(110*den));
         root.setBackgroundColor(Color.rgb(241,245,248));
 
         android.graphics.drawable.GradientDrawable headerBg=new android.graphics.drawable.GradientDrawable();
-        headerBg.setColor(navy); headerBg.setCornerRadius(22*uiDen);
+        headerBg.setColor(navy); headerBg.setCornerRadius(22*den);
         header.setBackground(headerBg);
-        header.setPadding((int)(18*uiDen),(int)(12*uiDen),(int)(12*uiDen),(int)(12*uiDen));
-        title.setText("VIBRATION MONITOR"); title.setTextSize(27); title.setTextColor(Color.WHITE); title.setSingleLine(true); title.setGravity(Gravity.CENTER);
+        header.setPadding((int)(18*den),(int)(12*den),(int)(12*den),(int)(12*den));
+        title.setText("VIBRATION\nMONITOR"); title.setTextSize(22); title.setTextColor(Color.WHITE);
         title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        logo.setBackgroundColor(Color.WHITE); logo.setPadding((int)(12*uiDen),(int)(3*uiDen),(int)(12*uiDen),(int)(3*uiDen)); LinearLayout.LayoutParams lpLogo=(LinearLayout.LayoutParams)logo.getLayoutParams(); if(lpLogo!=null){lpLogo.width=(int)(190*uiDen);lpLogo.height=(int)(38*uiDen);lpLogo.gravity=Gravity.CENTER;logo.setLayoutParams(lpLogo);}
-        header.setOrientation(LinearLayout.VERTICAL); header.setGravity(Gravity.CENTER); root.addView(header,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(100*uiDen)));
+        logo.setBackgroundColor(Color.WHITE); logo.setPadding((int)(8*den),(int)(5*den),(int)(8*den),(int)(5*den));
+        root.addView(header,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(82*den)));
 
         TextView sub=new TextView(this);
         sub.setText("REAL-TIME 3-AXIS CONDITION MONITORING"); sub.setTextSize(11); sub.setTextColor(muted);
-        sub.setLetterSpacing(0.08f); sub.setPadding((int)(4*uiDen),(int)(10*uiDen),0,(int)(8*uiDen)); root.addView(sub);
+        sub.setLetterSpacing(0.08f); sub.setPadding((int)(4*den),(int)(10*den),0,(int)(8*den)); root.addView(sub);
 
         LinearLayout statusPanel=new LinearLayout(this); statusPanel.setOrientation(LinearLayout.VERTICAL);
-        statusPanel.setPadding((int)(14*uiDen),(int)(10*uiDen),(int)(14*uiDen),(int)(10*uiDen));
+        statusPanel.setPadding((int)(14*den),(int)(10*den),(int)(14*den),(int)(10*den));
         android.graphics.drawable.GradientDrawable statusBg=new android.graphics.drawable.GradientDrawable();
-        statusBg.setColor(Color.WHITE); statusBg.setCornerRadius(18*uiDen); statusBg.setStroke((int)(1*uiDen),Color.rgb(220,228,234));
+        statusBg.setColor(Color.WHITE); statusBg.setCornerRadius(18*den); statusBg.setStroke((int)(1*den),Color.rgb(220,228,234));
         statusPanel.setBackground(statusBg);
         TextView[] statuses={sensorStatus,locationText,cameraText,samplingText};
-        for(TextView st:statuses){st.setGravity(Gravity.START);st.setTextSize(13);st.setTextColor(muted);st.setPadding(0,(int)(2*uiDen),0,(int)(3*uiDen));}
+        for(TextView st:statuses){st.setGravity(Gravity.START);st.setTextSize(13);st.setTextColor(muted);st.setPadding(0,(int)(2*den),0,(int)(3*den));}
         sensorStatus.setTextColor(ink);
         statusPanel.addView(sensorStatus);statusPanel.addView(locationText);statusPanel.addView(cameraText);statusPanel.addView(samplingText);
         LinearLayout.LayoutParams statusLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT);
-        statusLp.setMargins(0,0,0,(int)(10*uiDen));root.addView(statusPanel,statusLp);
+        statusLp.setMargins(0,0,0,(int)(10*den));root.addView(statusPanel,statusLp);
 
         LinearLayout buildingRow=new LinearLayout(this);buildingRow.setOrientation(LinearLayout.HORIZONTAL);buildingRow.setGravity(Gravity.CENTER_VERTICAL);
         buildingLabel.setText("AREA");buildingLabel.setTextSize(12);buildingLabel.setTextColor(muted);buildingLabel.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        buildingLabel.setPadding((int)(4*uiDen),0,(int)(12*uiDen),0);buildingRow.addView(buildingLabel);
-        buildingRow.addView(buildingSpinner,new LinearLayout.LayoutParams(0,(int)(48*uiDen),1f));root.addView(buildingRow);
+        buildingLabel.setPadding((int)(4*den),0,(int)(12*den),0);buildingRow.addView(buildingLabel);
+        buildingRow.addView(buildingSpinner,new LinearLayout.LayoutParams(0,(int)(48*den),1f));root.addView(buildingRow);
 
         LinearLayout graphCard=new LinearLayout(this);graphCard.setOrientation(LinearLayout.VERTICAL);
-        graphCard.setPadding((int)(10*uiDen),(int)(10*uiDen),(int)(10*uiDen),(int)(8*uiDen));
+        graphCard.setPadding((int)(10*den),(int)(10*den),(int)(10*den),(int)(8*den));
         android.graphics.drawable.GradientDrawable graphBg=new android.graphics.drawable.GradientDrawable();
-        graphBg.setColor(Color.WHITE);graphBg.setCornerRadius(20*uiDen);graphBg.setStroke((int)(1*uiDen),Color.rgb(218,226,233));graphCard.setBackground(graphBg);
+        graphBg.setColor(Color.WHITE);graphBg.setCornerRadius(20*den);graphBg.setStroke((int)(1*den),Color.rgb(218,226,233));graphCard.setBackground(graphBg);
         TextView graphTitle=new TextView(this);graphTitle.setText("LIVE VIBRATION");graphTitle.setTextSize(13);graphTitle.setTextColor(ink);
-        graphTitle.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);graphTitle.setPadding((int)(5*uiDen),(int)(2*uiDen),0,(int)(6*uiDen));graphCard.addView(graphTitle);
-        graphCard.addView(graph,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(285*uiDen)));
-        graphModes.setPadding(0,(int)(6*uiDen),0,0);
-        for(int i=0;i<graphModes.getChildCount();i++){Button bm=(Button)graphModes.getChildAt(i);bm.setTextSize(11);bm.setTextColor(ink);bm.setAllCaps(false);bm.setMinHeight((int)(40*uiDen));bm.setBackgroundTintList(android.content.res.ColorStateList.valueOf(soft));}
+        graphTitle.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);graphTitle.setPadding((int)(5*den),(int)(2*den),0,(int)(6*den));graphCard.addView(graphTitle);
+        graphCard.addView(graph,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(285*den)));
+        graphModes.setPadding(0,(int)(6*den),0,0);
+        for(int i=0;i<graphModes.getChildCount();i++){Button bm=(Button)graphModes.getChildAt(i);bm.setTextSize(11);bm.setTextColor(ink);bm.setAllCaps(false);bm.setMinHeight((int)(40*den));bm.setBackgroundTintList(android.content.res.ColorStateList.valueOf(soft));}
         graphCard.addView(graphModes);
         LinearLayout.LayoutParams graphLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT);
-        graphLp.setMargins(0,(int)(8*uiDen),0,(int)(10*uiDen));root.addView(graphCard,graphLp);
+        graphLp.setMargins(0,(int)(8*den),0,(int)(10*den));root.addView(graphCard,graphLp);
 
         LinearLayout totalCard=new LinearLayout(this);totalCard.setOrientation(LinearLayout.VERTICAL);
-        totalCard.setPadding((int)(18*uiDen),(int)(12*uiDen),(int)(18*uiDen),(int)(12*uiDen));
+        totalCard.setPadding((int)(18*den),(int)(12*den),(int)(18*den),(int)(12*den));
         android.graphics.drawable.GradientDrawable totalBg=new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,new int[]{Color.rgb(27,52,72),Color.rgb(37,83,105)});
-        totalBg.setCornerRadius(20*uiDen);totalCard.setBackground(totalBg);
+        totalBg.setCornerRadius(20*den);totalCard.setBackground(totalBg);
         TextView totalLabel=new TextView(this);totalLabel.setText("TOTAL VIBRATION");totalLabel.setTextSize(12);totalLabel.setTextColor(Color.rgb(190,211,223));totalLabel.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);totalCard.addView(totalLabel);
-        currentText.setTextSize(30);currentText.setTextColor(Color.WHITE);currentText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);currentText.setPadding(0,(int)(2*uiDen),0,(int)(2*uiDen));totalCard.addView(currentText);
+        currentText.setTextSize(30);currentText.setTextColor(Color.WHITE);currentText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);currentText.setPadding(0,(int)(2*den),0,(int)(2*den));totalCard.addView(currentText);
         LinearLayout totalStats=new LinearLayout(this);totalStats.setOrientation(LinearLayout.HORIZONTAL);
-        TextView[] ts={avgText,maxText,minText};for(TextView tv:ts){tv.setTextSize(12);tv.setTextColor(Color.rgb(220,232,239));tv.setGravity(Gravity.CENTER);tv.setPadding((int)(2*uiDen),(int)(5*uiDen),(int)(2*uiDen),(int)(5*uiDen));totalStats.addView(tv,new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f));}
+        TextView[] ts={avgText,maxText,minText};for(TextView tv:ts){tv.setTextSize(12);tv.setTextColor(Color.rgb(220,232,239));tv.setGravity(Gravity.CENTER);tv.setPadding((int)(2*den),(int)(5*den),(int)(2*den),(int)(5*den));totalStats.addView(tv,new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f));}
         totalCard.addView(totalStats);root.addView(totalCard);
 
-        LinearLayout axisCard=new LinearLayout(this);axisCard.setOrientation(LinearLayout.VERTICAL);axisCard.setPadding((int)(14*uiDen),(int)(12*uiDen),(int)(14*uiDen),(int)(12*uiDen));
-        android.graphics.drawable.GradientDrawable axisBg=new android.graphics.drawable.GradientDrawable();axisBg.setColor(Color.WHITE);axisBg.setCornerRadius(20*uiDen);axisBg.setStroke((int)(1*uiDen),Color.rgb(218,226,233));axisCard.setBackground(axisBg);
-        axisSummaryText.setTextSize(14);axisSummaryText.setTextColor(ink);axisSummaryText.setTypeface(android.graphics.Typeface.MONOSPACE);axisSummaryText.setPadding(0,0,0,(int)(5*uiDen));
+        LinearLayout axisCard=new LinearLayout(this);axisCard.setOrientation(LinearLayout.VERTICAL);axisCard.setPadding((int)(14*den),(int)(12*den),(int)(14*den),(int)(12*den));
+        android.graphics.drawable.GradientDrawable axisBg=new android.graphics.drawable.GradientDrawable();axisBg.setColor(Color.WHITE);axisBg.setCornerRadius(20*den);axisBg.setStroke((int)(1*den),Color.rgb(218,226,233));axisCard.setBackground(axisBg);
+        axisSummaryText.setTextSize(14);axisSummaryText.setTextColor(ink);axisSummaryText.setTypeface(android.graphics.Typeface.MONOSPACE);axisSummaryText.setPadding(0,0,0,(int)(5*den));
         directionText.setTextSize(17);directionText.setTextColor(purple);directionText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);directionText.setGravity(Gravity.CENTER);
         axisCard.addView(axisSummaryText);axisCard.addView(directionText);
-        LinearLayout.LayoutParams axisLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT);axisLp.setMargins(0,(int)(10*uiDen),0,(int)(10*uiDen));root.addView(axisCard,axisLp);
+        LinearLayout.LayoutParams axisLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT);axisLp.setMargins(0,(int)(10*den),0,(int)(10*den));root.addView(axisCard,axisLp);
 
-        LinearLayout specCard=new LinearLayout(this);specCard.setOrientation(LinearLayout.VERTICAL);specCard.setPadding((int)(14*uiDen),(int)(10*uiDen),(int)(14*uiDen),(int)(12*uiDen));
-        android.graphics.drawable.GradientDrawable specBg=new android.graphics.drawable.GradientDrawable();specBg.setColor(Color.WHITE);specBg.setCornerRadius(18*uiDen);specBg.setStroke((int)(1*uiDen),Color.rgb(218,226,233));specCard.setBackground(specBg);
+        LinearLayout specCard=new LinearLayout(this);specCard.setOrientation(LinearLayout.VERTICAL);specCard.setPadding((int)(14*den),(int)(10*den),(int)(14*den),(int)(12*den));
+        android.graphics.drawable.GradientDrawable specBg=new android.graphics.drawable.GradientDrawable();specBg.setColor(Color.WHITE);specBg.setCornerRadius(18*den);specBg.setStroke((int)(1*den),Color.rgb(218,226,233));specCard.setBackground(specBg);
         thresholdLabel.setTextSize(12);thresholdLabel.setTextColor(muted);thresholdInput.setTextSize(19);thresholdInput.setTextColor(ink);thresholdInput.setSingleLine(true);
         specSaveButton.setText("SPEC APPLY");specSaveButton.setTextColor(Color.WHITE);specSaveButton.setTextSize(13);specSaveButton.setAllCaps(false);specSaveButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(purple));
         specCard.addView(thresholdLabel);LinearLayout specRow=new LinearLayout(this);specRow.setOrientation(LinearLayout.HORIZONTAL);specRow.setGravity(Gravity.CENTER_VERTICAL);
-        specRow.addView(thresholdInput,new LinearLayout.LayoutParams(0,(int)(50*uiDen),1f));LinearLayout.LayoutParams applyLp=new LinearLayout.LayoutParams((int)(125*uiDen),(int)(50*uiDen));applyLp.setMargins((int)(8*uiDen),0,0,0);specRow.addView(specSaveButton,applyLp);specCard.addView(specRow);root.addView(specCard);
+        specRow.addView(thresholdInput,new LinearLayout.LayoutParams(0,(int)(50*den),1f));LinearLayout.LayoutParams applyLp=new LinearLayout.LayoutParams((int)(125*den),(int)(50*den));applyLp.setMargins((int)(8*den),0,0,0);specRow.addView(specSaveButton,applyLp);specCard.addView(specRow);root.addView(specCard);
 
         alarmText.setTextSize(17);alarmText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);alarmText.setGravity(Gravity.CENTER);
         eventText.setTextSize(13);eventText.setTextColor(muted);root.addView(alarmText);root.addView(eventText);
 
         LinearLayout row1=new LinearLayout(this);row1.setOrientation(LinearLayout.HORIZONTAL);LinearLayout row2=new LinearLayout(this);row2.setOrientation(LinearLayout.HORIZONTAL);
-        Button[] mains={startButton,stopButton,resetButton,csvButton,historyButton};for(Button mb:mains){mb.setTextColor(Color.WHITE);mb.setTextSize(14);mb.setAllCaps(false);mb.setMinHeight((int)(52*uiDen));}
+        Button[] mains={startButton,stopButton,resetButton,csvButton,historyButton};for(Button mb:mains){mb.setTextColor(Color.WHITE);mb.setTextSize(14);mb.setAllCaps(false);mb.setMinHeight((int)(52*den));}
         startButton.setText("▶  측정 시작");stopButton.setText("■  측정 중지");resetButton.setText("↻  값 초기화");csvButton.setText("CSV 데이터");historyButton.setText("진동 이력 관리");
         startButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(green));stopButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(red));resetButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(91,108,123)));csvButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(blue));historyButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(navy));
-        LinearLayout.LayoutParams half=new LinearLayout.LayoutParams(0,(int)(54*uiDen),1f);half.setMargins((int)(3*uiDen),(int)(3*uiDen),(int)(3*uiDen),(int)(3*uiDen));
+        LinearLayout.LayoutParams half=new LinearLayout.LayoutParams(0,(int)(54*den),1f);half.setMargins((int)(3*den),(int)(3*den),(int)(3*den),(int)(3*den));
         row1.addView(startButton,new LinearLayout.LayoutParams(half));row1.addView(stopButton,new LinearLayout.LayoutParams(half));row2.addView(resetButton,new LinearLayout.LayoutParams(half));row2.addView(csvButton,new LinearLayout.LayoutParams(half));root.addView(row1);root.addView(row2);
-        LinearLayout.LayoutParams historyLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(54*uiDen));historyLp.setMargins((int)(3*uiDen),(int)(3*uiDen),(int)(3*uiDen),(int)(8*uiDen));root.addView(historyButton,historyLp);
+        LinearLayout.LayoutParams historyLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(54*den));historyLp.setMargins((int)(3*den),(int)(3*den),(int)(3*den),(int)(8*den));root.addView(historyButton,historyLp);
 
         Button settingsToggle=new Button(this);settingsToggle.setText("⚙  알림 / Telegram 설정");settingsToggle.setTextColor(ink);settingsToggle.setTextSize(13);settingsToggle.setAllCaps(false);settingsToggle.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(225,232,237)));
-        LinearLayout settingsPanel=new LinearLayout(this);settingsPanel.setOrientation(LinearLayout.VERTICAL);settingsPanel.setPadding((int)(12*uiDen),(int)(8*uiDen),(int)(12*uiDen),(int)(12*uiDen));settingsPanel.setVisibility(View.GONE);
+        LinearLayout settingsPanel=new LinearLayout(this);settingsPanel.setOrientation(LinearLayout.VERTICAL);settingsPanel.setPadding((int)(12*den),(int)(8*den),(int)(12*den),(int)(12*den));settingsPanel.setVisibility(View.GONE);
         settingsPanel.addView(emailLabel);settingsPanel.addView(emailInput);settingsPanel.addView(emailSaveButton);settingsPanel.addView(telegramTitle);settingsPanel.addView(telegramTokenInput);settingsPanel.addView(telegramChatIdInput);settingsPanel.addView(telegramSaveButton);settingsPanel.addView(telegramTestButton);settingsPanel.addView(telegramStatus);
-        Button[] sbs={emailSaveButton,telegramSaveButton,telegramTestButton};for(Button styleBtn:sbs){styleBtn.setTextColor(Color.WHITE);styleBtn.setTextSize(13);styleBtn.setAllCaps(false);styleBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(75,94,110)));}
+        Button[] sbs={emailSaveButton,telegramSaveButton,telegramTestButton};for(Button sb:sbs){sb.setTextColor(Color.WHITE);sb.setTextSize(13);sb.setAllCaps(false);sb.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(75,94,110)));}
         settingsToggle.setOnClickListener(v->{boolean show=settingsPanel.getVisibility()!=View.VISIBLE;settingsPanel.setVisibility(show?View.VISIBLE:View.GONE);settingsToggle.setText(show?"▲  알림 / Telegram 설정 닫기":"⚙  알림 / Telegram 설정");});
         root.addView(settingsToggle);root.addView(settingsPanel);
 
