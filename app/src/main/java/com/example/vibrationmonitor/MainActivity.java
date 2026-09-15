@@ -455,7 +455,6 @@ public class MainActivity extends Activity implements SensorEventListener {
         root.removeView(graph);
         root.addView(
                 graph,
-                4,
                 new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         (int)(235*den)
