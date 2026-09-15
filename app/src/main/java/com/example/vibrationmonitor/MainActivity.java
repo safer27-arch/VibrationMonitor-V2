@@ -120,12 +120,14 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(30, 25, 30, 30);
+        float den=getResources().getDisplayMetrics().density;
+        int pad=(int)(10*den);
+        root.setPadding(pad,(int)(8*den),pad,(int)(18*den));
         root.setBackgroundColor(Color.rgb(244,247,250));
 
         TextView title = new TextView(this);
-        title.setText("Vibration Monitor");
-        title.setTextSize(28);
+        title.setText("VIBRATION MONITOR");
+        title.setTextSize(25);
         title.setTextColor(Color.BLACK);
         title.setGravity(Gravity.CENTER);
 
@@ -252,13 +254,13 @@ public class MainActivity extends Activity implements SensorEventListener {
                 graph,
                 new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
-                        600
+                        (int)(235*den)
                 )
         );
 
-        currentText = createValueText(
-                "현재값 : 0.000 m/s²"
-        );
+        currentText = createValueText("TOTAL VIBRATION     0.000 m/s²");
+        currentText.setTextSize(21); currentText.setTextColor(Color.WHITE); currentText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        android.graphics.drawable.GradientDrawable tb=new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,new int[]{Color.rgb(14,65,100),Color.rgb(18,119,142)}); tb.setCornerRadius(16*den); currentText.setBackground(tb); currentText.setPadding((int)(14*den),(int)(14*den),(int)(14*den),(int)(14*den));
         avgText = createValueText(
                 "평균값 : 0.000 m/s²"
         );
@@ -272,9 +274,9 @@ public class MainActivity extends Activity implements SensorEventListener {
         axisSummaryText = createValueText(
                 "X  0.000   Y  0.000   Z  0.000   TOTAL  0.000 m/s²"
         );
-        axisSummaryText.setTextSize(18);
+        axisSummaryText.setTextSize(14); axisSummaryText.setPadding((int)(12*den),(int)(10*den),(int)(12*den),(int)(10*den));
         directionText = createValueText("주 진동 방향 : -");
-        directionText.setTextSize(18);
+        directionText.setTextSize(14); directionText.setGravity(Gravity.CENTER); directionText.setTextColor(Color.rgb(0,105,125));
         samplingText = createValueText("Sampling : 0.0 Hz");
         samplingText.setTextSize(15);
 
@@ -433,21 +435,21 @@ public class MainActivity extends Activity implements SensorEventListener {
         );
 
         LinearLayout header = new LinearLayout(this);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setPadding(18, 14, 12, 14);
-        header.setBackgroundColor(Color.WHITE);
-        title.setTextColor(Color.rgb(25,45,65));
-        title.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);
-        header.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        android.widget.ImageView logo = new android.widget.ImageView(this);
-        logo.setImageResource(com.example.vibrationmonitor.R.drawable.lges_logo);
-        logo.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
-        header.addView(logo, new LinearLayout.LayoutParams((int)(190*getResources().getDisplayMetrics().density), (int)(52*getResources().getDisplayMetrics().density)));
-        root.addView(header);
-        root.addView(sensorStatus);
-        root.addView(locationText);
-        root.addView(cameraText);
+        header.setOrientation(LinearLayout.VERTICAL);
+        header.setGravity(Gravity.CENTER);
+        header.setPadding((int)(10*den),(int)(9*den),(int)(10*den),(int)(8*den));
+        android.graphics.drawable.GradientDrawable hb=new android.graphics.drawable.GradientDrawable();
+        hb.setColor(Color.rgb(20,48,74)); hb.setCornerRadius(18*den); header.setBackground(hb);
+        title.setText("VIBRATION MONITOR"); title.setTextSize(25); title.setTextColor(Color.WHITE); title.setGravity(Gravity.CENTER); title.setSingleLine(true); title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        header.addView(title,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(39*den)));
+        android.widget.ImageView logo=new android.widget.ImageView(this); logo.setImageResource(com.example.vibrationmonitor.R.drawable.lges_logo); logo.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
+        android.graphics.drawable.GradientDrawable lb=new android.graphics.drawable.GradientDrawable(); lb.setColor(Color.WHITE); lb.setCornerRadius(8*den); logo.setBackground(lb);
+        LinearLayout.LayoutParams llp=new LinearLayout.LayoutParams((int)(170*den),(int)(34*den)); llp.gravity=Gravity.CENTER; llp.topMargin=(int)(3*den); header.addView(logo,llp);
+        root.addView(header,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(88*den)));
+        LinearLayout statusCard=new LinearLayout(this); statusCard.setOrientation(LinearLayout.VERTICAL); statusCard.setPadding((int)(12*den),(int)(8*den),(int)(12*den),(int)(8*den));
+        android.graphics.drawable.GradientDrawable sb=new android.graphics.drawable.GradientDrawable(); sb.setColor(Color.WHITE); sb.setCornerRadius(14*den); statusCard.setBackground(sb);
+        sensorStatus.setTextSize(12); sensorStatus.setGravity(Gravity.START); sensorStatus.setPadding(0,0,0,2); locationText.setTextSize(11); locationText.setGravity(Gravity.START); locationText.setPadding(0,0,0,2); cameraText.setTextSize(11); cameraText.setGravity(Gravity.START); cameraText.setPadding(0,0,0,0);
+        statusCard.addView(sensorStatus); statusCard.addView(locationText); statusCard.addView(cameraText); LinearLayout.LayoutParams slp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT); slp.setMargins(0,(int)(7*den),0,(int)(7*den)); root.addView(statusCard,slp);
 
         // 그래프가 제목 바로 아래 보이도록 순서 조정
         root.removeView(graph);
@@ -456,7 +458,7 @@ public class MainActivity extends Activity implements SensorEventListener {
                 4,
                 new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
-                        600
+                        (int)(235*den)
                 )
         );
 
@@ -474,7 +476,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         for (String m : modeNames) {
             Button b = new Button(this);
             b.setText(m);
-            b.setTextSize(12);
+            b.setTextSize(10);
             b.setAllCaps(false);
             b.setOnClickListener(v -> graph.setMode(m));
             graphModes.addView(b, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
