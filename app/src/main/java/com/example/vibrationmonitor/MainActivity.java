@@ -252,7 +252,7 @@ public class MainActivity extends Activity implements SensorEventListener {
                 graph,
                 new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
-                        600
+                        420
                 )
         );
 
@@ -611,10 +611,10 @@ public class MainActivity extends Activity implements SensorEventListener {
         headerBg.setColor(navy); headerBg.setCornerRadius(22*den);
         header.setBackground(headerBg);
         header.setPadding((int)(18*den),(int)(12*den),(int)(12*den),(int)(12*den));
-        title.setText("VIBRATION\nMONITOR"); title.setTextSize(22); title.setTextColor(Color.WHITE);
+        title.setText("VIBRATION MONITOR"); title.setTextSize(20); title.setTextColor(Color.WHITE);
         title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         logo.setBackgroundColor(Color.WHITE); logo.setPadding((int)(8*den),(int)(5*den),(int)(8*den),(int)(5*den));
-        root.addView(header,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(82*den)));
+        root.addView(header,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(72*den)));
 
         TextView sub=new TextView(this);
         sub.setText("REAL-TIME 3-AXIS CONDITION MONITORING"); sub.setTextSize(11); sub.setTextColor(muted);
