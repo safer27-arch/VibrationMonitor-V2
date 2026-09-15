@@ -433,17 +433,17 @@ public class MainActivity extends Activity implements SensorEventListener {
         );
 
         LinearLayout header = new LinearLayout(this);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setPadding(18, 14, 12, 14);
+        header.setOrientation(LinearLayout.VERTICAL);
+        header.setGravity(Gravity.CENTER);
+        header.setPadding(12, 8, 12, 8);
         header.setBackgroundColor(Color.WHITE);
         title.setTextColor(Color.rgb(25,45,65));
-        title.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);
-        header.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        title.setGravity(Gravity.CENTER); title.setSingleLine(true); title.setText("VIBRATION MONITOR"); title.setTextSize(22);
+        header.addView(title, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         android.widget.ImageView logo = new android.widget.ImageView(this);
         logo.setImageResource(com.example.vibrationmonitor.R.drawable.lges_logo);
         logo.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
-        header.addView(logo, new LinearLayout.LayoutParams((int)(190*getResources().getDisplayMetrics().density), (int)(52*getResources().getDisplayMetrics().density)));
+        LinearLayout.LayoutParams logoLp0=new LinearLayout.LayoutParams((int)(170*getResources().getDisplayMetrics().density),(int)(34*getResources().getDisplayMetrics().density)); logoLp0.gravity=Gravity.CENTER; header.addView(logo,logoLp0);
         root.addView(header);
         root.addView(sensorStatus);
         root.addView(locationText);
@@ -604,7 +604,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         final int purple=Color.rgb(111,71,170), soft=Color.rgb(238,243,247);
 
         root.removeAllViews();
-        root.setPadding((int)(14*den),(int)(10*den),(int)(14*den),(int)(110*den));
+        root.setPadding((int)(12*den),(int)(8*den),(int)(12*den),(int)(70*den));
         root.setBackgroundColor(Color.rgb(241,245,248));
 
         android.graphics.drawable.GradientDrawable headerBg=new android.graphics.drawable.GradientDrawable();
@@ -614,7 +614,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         title.setText("VIBRATION MONITOR"); title.setTextSize(20); title.setTextColor(Color.WHITE);
         title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         logo.setBackgroundColor(Color.WHITE); logo.setPadding((int)(8*den),(int)(5*den),(int)(8*den),(int)(5*den));
-        root.addView(header,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(72*den)));
+        root.addView(header,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(92*den)));
 
         TextView sub=new TextView(this);
         sub.setText("REAL-TIME 3-AXIS CONDITION MONITORING"); sub.setTextSize(11); sub.setTextColor(muted);
@@ -643,7 +643,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         graphBg.setColor(Color.WHITE);graphBg.setCornerRadius(20*den);graphBg.setStroke((int)(1*den),Color.rgb(218,226,233));graphCard.setBackground(graphBg);
         TextView graphTitle=new TextView(this);graphTitle.setText("LIVE VIBRATION");graphTitle.setTextSize(13);graphTitle.setTextColor(ink);
         graphTitle.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);graphTitle.setPadding((int)(5*den),(int)(2*den),0,(int)(6*den));graphCard.addView(graphTitle);
-        graphCard.addView(graph,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(285*den)));
+        graphCard.addView(graph,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(230*den)));
         graphModes.setPadding(0,(int)(6*den),0,0);
         for(int i=0;i<graphModes.getChildCount();i++){Button bm=(Button)graphModes.getChildAt(i);bm.setTextSize(11);bm.setTextColor(ink);bm.setAllCaps(false);bm.setMinHeight((int)(40*den));bm.setBackgroundTintList(android.content.res.ColorStateList.valueOf(soft));}
         graphCard.addView(graphModes);
@@ -655,15 +655,15 @@ public class MainActivity extends Activity implements SensorEventListener {
         android.graphics.drawable.GradientDrawable totalBg=new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,new int[]{Color.rgb(27,52,72),Color.rgb(37,83,105)});
         totalBg.setCornerRadius(20*den);totalCard.setBackground(totalBg);
         TextView totalLabel=new TextView(this);totalLabel.setText("TOTAL VIBRATION");totalLabel.setTextSize(12);totalLabel.setTextColor(Color.rgb(190,211,223));totalLabel.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);totalCard.addView(totalLabel);
-        currentText.setTextSize(30);currentText.setTextColor(Color.WHITE);currentText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);currentText.setPadding(0,(int)(2*den),0,(int)(2*den));totalCard.addView(currentText);
+        currentText.setTextSize(27);currentText.setTextColor(Color.WHITE);currentText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);currentText.setPadding(0,(int)(2*den),0,(int)(2*den));totalCard.addView(currentText);
         LinearLayout totalStats=new LinearLayout(this);totalStats.setOrientation(LinearLayout.HORIZONTAL);
         TextView[] ts={avgText,maxText,minText};for(TextView tv:ts){tv.setTextSize(12);tv.setTextColor(Color.rgb(220,232,239));tv.setGravity(Gravity.CENTER);tv.setPadding((int)(2*den),(int)(5*den),(int)(2*den),(int)(5*den));totalStats.addView(tv,new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f));}
         totalCard.addView(totalStats);root.addView(totalCard);
 
         LinearLayout axisCard=new LinearLayout(this);axisCard.setOrientation(LinearLayout.VERTICAL);axisCard.setPadding((int)(14*den),(int)(12*den),(int)(14*den),(int)(12*den));
         android.graphics.drawable.GradientDrawable axisBg=new android.graphics.drawable.GradientDrawable();axisBg.setColor(Color.WHITE);axisBg.setCornerRadius(20*den);axisBg.setStroke((int)(1*den),Color.rgb(218,226,233));axisCard.setBackground(axisBg);
-        axisSummaryText.setTextSize(14);axisSummaryText.setTextColor(ink);axisSummaryText.setTypeface(android.graphics.Typeface.MONOSPACE);axisSummaryText.setPadding(0,0,0,(int)(5*den));
-        directionText.setTextSize(17);directionText.setTextColor(purple);directionText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);directionText.setGravity(Gravity.CENTER);
+        axisSummaryText.setTextSize(13);axisSummaryText.setTextColor(ink);axisSummaryText.setTypeface(android.graphics.Typeface.MONOSPACE);axisSummaryText.setPadding(0,0,0,(int)(5*den));
+        directionText.setTextSize(15);directionText.setTextColor(purple);directionText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);directionText.setGravity(Gravity.CENTER);
         axisCard.addView(axisSummaryText);axisCard.addView(directionText);
         LinearLayout.LayoutParams axisLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT);axisLp.setMargins(0,(int)(10*den),0,(int)(10*den));root.addView(axisCard,axisLp);
 
