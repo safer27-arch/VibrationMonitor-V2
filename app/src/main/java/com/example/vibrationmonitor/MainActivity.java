@@ -604,7 +604,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         final int purple=Color.rgb(111,71,170), soft=Color.rgb(238,243,247);
 
         root.removeAllViews();
-        root.setPadding((int)(12*den),(int)(8*den),(int)(12*den),(int)(70*den));
+        root.setPadding((int)(12*den),(int)(12*den),(int)(12*den),(int)(70*den));
         root.setBackgroundColor(Color.rgb(241,245,248));
 
         android.graphics.drawable.GradientDrawable headerBg=new android.graphics.drawable.GradientDrawable();
@@ -614,7 +614,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         title.setText("VIBRATION MONITOR"); title.setTextSize(20); title.setTextColor(Color.WHITE);
         title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         logo.setBackgroundColor(Color.WHITE); logo.setPadding((int)(8*den),(int)(5*den),(int)(8*den),(int)(5*den));
-        root.addView(header,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(92*den)));
+        LinearLayout.LayoutParams finalHeaderLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(100*den)); finalHeaderLp.setMargins(0,(int)(4*den),0,0); root.addView(header,finalHeaderLp);
 
         TextView sub=new TextView(this);
         sub.setText("REAL-TIME 3-AXIS CONDITION MONITORING"); sub.setTextSize(11); sub.setTextColor(muted);
@@ -662,7 +662,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         LinearLayout axisCard=new LinearLayout(this);axisCard.setOrientation(LinearLayout.VERTICAL);axisCard.setPadding((int)(14*den),(int)(12*den),(int)(14*den),(int)(12*den));
         android.graphics.drawable.GradientDrawable axisBg=new android.graphics.drawable.GradientDrawable();axisBg.setColor(Color.WHITE);axisBg.setCornerRadius(20*den);axisBg.setStroke((int)(1*den),Color.rgb(218,226,233));axisCard.setBackground(axisBg);
-        axisSummaryText.setTextSize(13);axisSummaryText.setTextColor(ink);axisSummaryText.setTypeface(android.graphics.Typeface.MONOSPACE);axisSummaryText.setPadding(0,0,0,(int)(5*den));
+        axisSummaryText.setTextSize(14); axisSummaryText.setTypeface(android.graphics.Typeface.MONOSPACE);axisSummaryText.setTextColor(ink);axisSummaryText.setTypeface(android.graphics.Typeface.MONOSPACE);axisSummaryText.setPadding(0,0,0,(int)(5*den));
         directionText.setTextSize(15);directionText.setTextColor(purple);directionText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);directionText.setGravity(Gravity.CENTER);
         axisCard.addView(axisSummaryText);axisCard.addView(directionText);
         LinearLayout.LayoutParams axisLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT);axisLp.setMargins(0,(int)(10*den),0,(int)(10*den));root.addView(axisCard,axisLp);
