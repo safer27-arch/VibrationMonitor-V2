@@ -395,6 +395,12 @@ public class MainActivity extends Activity implements SensorEventListener {
         Button csvButton = new Button(this);
         csvButton.setText("저장된 CSV 파일");
 
+        Button processShockButton = new Button(this);
+        processShockButton.setText("공정 충격 분석 / PROCESS SHOCK");
+        processShockButton.setOnClickListener(v -> startActivity(
+                new android.content.Intent(this, ProcessShockActivity.class)
+        ));
+
         Button historyButton = new Button(this);
         historyButton.setText("진동 이력 관리");
         historyButton.setOnClickListener(v -> {
@@ -595,7 +601,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         root.addView(stopButton);
         root.addView(resetButton);
         root.addView(csvButton);
-        root.addView(historyButton);
+        root.addView(processShockButton);\n        root.addView(historyButton);
 
         // ===== V2.1 INDUSTRIAL DASHBOARD =====
         final float den = getResources().getDisplayMetrics().density;
