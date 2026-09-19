@@ -601,7 +601,8 @@ public class MainActivity extends Activity implements SensorEventListener {
         root.addView(stopButton);
         root.addView(resetButton);
         root.addView(csvButton);
-        root.addView(processShockButton);\n        root.addView(historyButton);
+        root.addView(processShockButton);
+        root.addView(historyButton);
 
         // ===== V2.1 INDUSTRIAL DASHBOARD =====
         final float den = getResources().getDisplayMetrics().density;
