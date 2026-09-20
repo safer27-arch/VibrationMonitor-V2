@@ -249,7 +249,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         process.setAdapter(new ArrayAdapter<String>(
                 this,
                 android.R.layout.simple_spinner_dropdown_item,
-                new String[]{"STACK", "PACKAGE", "ACTIVATION"}
+                new String[]{"STACK", "PACKAGE", "FORMATION"}
         ));
         processCell.addView(process, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(38)));
@@ -278,7 +278,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         ));
         modeRow.addView(mode, new LinearLayout.LayoutParams(0, dp(42), 1f));
 
-        recipeButton = btn("RECIPE", Color.rgb(67, 88, 108));
+        recipeButton = btn("MCSC", Color.rgb(67, 88, 108));
         recipeButton.setTextSize(12);
         LinearLayout.LayoutParams recipeLp =
                 new LinearLayout.LayoutParams(dp(90), dp(40));
@@ -599,8 +599,21 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     private void loadRecipeForProcess() {
         if (process == null) return;
 
-        String text = getSharedPreferences("ShockRecipe", MODE_PRIVATE)
-                .getString(recipeKey(), defaultRecipeText());
+        android.content.SharedPreferences mcscPrefs =
+                getSharedPreferences("ShockRecipe", MODE_PRIVATE);
+
+        String key = recipeKey();
+        String currentProcess = String.valueOf(process.getSelectedItem());
+
+        String text;
+
+        if ("FORMATION".equals(currentProcess)
+                && !mcscPrefs.contains(key)
+                && mcscPrefs.contains("recipe_ACTIVATION")) {
+            text = mcscPrefs.getString("recipe_ACTIVATION", defaultRecipeText());
+        } else {
+            text = mcscPrefs.getString(key, defaultRecipeText());
+        }
 
         ArrayList<RecipeUnit> parsed = parseRecipe(text);
 
@@ -612,19 +625,74 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         recipe.addAll(parsed);
 
-        autoCorrectionEnabled = getSharedPreferences("ShockRecipe", MODE_PRIVATE)
-                .getBoolean(recipeKey() + "_auto_corr", true);
+        if ("FORMATION".equals(currentProcess)
+                && !mcscPrefs.contains(key + "_auto_corr")
+                && mcscPrefs.contains("recipe_ACTIVATION_auto_corr")) {
+            autoCorrectionEnabled =
+                    mcscPrefs.getBoolean("recipe_ACTIVATION_auto_corr", true);
+        } else {
+            autoCorrectionEnabled =
+                    mcscPrefs.getBoolean(key + "_auto_corr", true);
+        }
 
         if (timeline != null) {
             timeline.setRecipe(recipe);
         }
     }
 
+    private String mcscText(ArrayList<RecipeUnit> list) {
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < list.size(); i++) {
+            if (i > 0) sb.append("\n");
+
+            RecipeUnit r = list.get(i);
+            sb.append(r.name)
+                    .append(",")
+                    .append(String.format(Locale.US, "%.1f", r.seconds));
+        }
+
+        return sb.toString();
+    }
+
+    private void updateMcscCount(EditText editor, TextView countLabel) {
+        ArrayList<RecipeUnit> list = parseRecipe(editor.getText().toString());
+        countLabel.setText("MCSC UNIT COUNT : " + list.size());
+    }
+
+    private void changeMcscCount(EditText editor, TextView countLabel, int delta) {
+        ArrayList<RecipeUnit> list = parseRecipe(editor.getText().toString());
+
+        if (list.isEmpty()) {
+            list = parseRecipe(defaultRecipeText());
+        }
+
+        if (delta > 0) {
+            RecipeUnit r = new RecipeUnit();
+            r.name = "U" + (list.size() + 1);
+            r.seconds = list.isEmpty() ? 10.0 : list.get(list.size() - 1).seconds;
+            list.add(r);
+
+        } else if (delta < 0 && list.size() > 1) {
+            list.remove(list.size() - 1);
+        }
+
+        editor.setText(mcscText(list));
+        editor.setSelection(editor.getText().length());
+        updateMcscCount(editor, countLabel);
+    }
+
+    private void resetMcsc10(EditText editor, TextView countLabel) {
+        editor.setText(defaultRecipeText());
+        editor.setSelection(editor.getText().length());
+        updateMcscCount(editor, countLabel);
+    }
+
     private void showRecipeDialog() {
         if (running) {
             Toast.makeText(
                     this,
-                    "측정 중에는 Recipe를 변경할 수 없습니다.",
+                    "측정 중에는 MCSC를 변경할 수 없습니다.",
                     Toast.LENGTH_SHORT
             ).show();
             return;
@@ -639,6 +707,43 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 android.text.InputType.TYPE_CLASS_TEXT
                         | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
         );
+
+        TextView mcscCount = tv(
+                "MCSC UNIT COUNT : " + parseRecipe(e.getText().toString()).size(),
+                12,
+                Color.rgb(55, 75, 92)
+        );
+        mcscCount.setTypeface(null, 1);
+
+        LinearLayout mcscButtons = new LinearLayout(this);
+        mcscButtons.setOrientation(LinearLayout.HORIZONTAL);
+
+        Button minusUnit = btn("- UNIT", Color.rgb(90, 105, 118));
+        Button plusUnit = btn("+ UNIT", Color.rgb(0, 135, 105));
+        Button reset10 = btn("RESET 10", Color.rgb(67, 88, 108));
+
+        minusUnit.setTextSize(11);
+        plusUnit.setTextSize(11);
+        reset10.setTextSize(11);
+
+        mcscButtons.addView(
+                minusUnit,
+                new LinearLayout.LayoutParams(0, dp(40), 1f)
+        );
+
+        LinearLayout.LayoutParams plusLp =
+                new LinearLayout.LayoutParams(0, dp(40), 1f);
+        plusLp.setMargins(dp(5), 0, dp(5), 0);
+        mcscButtons.addView(plusUnit, plusLp);
+
+        mcscButtons.addView(
+                reset10,
+                new LinearLayout.LayoutParams(0, dp(40), 1f)
+        );
+
+        minusUnit.setOnClickListener(v -> changeMcscCount(e, mcscCount, -1));
+        plusUnit.setOnClickListener(v -> changeMcscCount(e, mcscCount, 1));
+        reset10.setOnClickListener(v -> resetMcsc10(e, mcscCount));
 
         CheckBox autoCorrCheck = new CheckBox(this);
         autoCorrCheck.setText("AUTO STOP CORRECTION");
@@ -655,17 +760,19 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         LinearLayout recipeDialogBox = new LinearLayout(this);
         recipeDialogBox.setOrientation(LinearLayout.VERTICAL);
         recipeDialogBox.setPadding(dp(8), dp(2), dp(8), dp(2));
+        recipeDialogBox.addView(mcscCount);
+        recipeDialogBox.addView(mcscButtons);
         recipeDialogBox.addView(e, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                dp(260)
+                dp(230)
         ));
         recipeDialogBox.addView(autoCorrCheck);
         recipeDialogBox.addView(autoCorrHelp);
 
         new android.app.AlertDialog.Builder(this)
-                .setTitle("AUTO TIMELINE RECIPE")
+                .setTitle("MCSC · UNIT TIME MAP")
                 .setMessage(
-                        "한 줄에 Unit 이름, 기준시간(초)\n"
+                        "MCSC Unit별 기준시간 설정\n한 줄에 Unit 이름, 기준시간(초)\n"
                                 + "예: Loader,8.5\nTransfer,10\nPress,12\n\n"
                                 + "설비가 멈추면 PROCESS PAUSE를 누르면\n"
                                 + "진동 측정은 계속하고 공정시간만 멈춥니다."
@@ -678,7 +785,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                     if (parsed.isEmpty()) {
                         Toast.makeText(
                                 this,
-                                "Recipe 형식을 확인해주세요.",
+                                "MCSC 형식을 확인해주세요.",
                                 Toast.LENGTH_LONG
                         ).show();
                         return;
@@ -696,7 +803,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
                     Toast.makeText(
                             this,
-                            "Recipe " + recipe.size() + "개 Unit 저장 완료",
+                            "MCSC " + recipe.size() + "개 Unit 저장 완료",
                             Toast.LENGTH_SHORT
                     ).show();
 
@@ -785,7 +892,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             return recipe.get(idx).name;
         }
 
-        return "AFTER RECIPE";
+        return "AFTER MCSC";
     }
 
     private void updateModeUi() {
@@ -1089,7 +1196,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             loadRecipeForProcess();
 
             if (recipe.isEmpty()) {
-                Toast.makeText(this, "AUTO TIMELINE Recipe가 없습니다.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "AUTO TIMELINE MCSC가 없습니다.", Toast.LENGTH_LONG).show();
                 return;
             }
         }
@@ -2074,7 +2181,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             ));
 
             o.println();
-            o.println("RecipeOrder,UnitAction,TargetSec");
+            o.println("MCSCOrder,UnitAction,TargetSec");
 
             for (int i = 0; i < recipe.size(); i++) {
                 RecipeUnit r = recipe.get(i);
@@ -2146,7 +2253,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         final String[] desc = {
                 "RAW + 전체 평가 + 사진 + 그래프 + Event CSV",
                 "측정 시작부터 종료까지 모든 X / Y / Z / Total",
-                "전체 측정시간 / Peak / RMS / 방향 / Recipe",
+                "전체 측정시간 / Peak / RMS / 방향 / MCSC",
                 "Unit별 시간 / Peak / RMS / Impact",
                 "충격 이벤트별 Peak / RMS / 방향 / 시간",
                 "충격 당시 사진 + 그래프 + Event CSV + 요약"
@@ -2337,7 +2444,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         b.append("RAW      : every measured X/Y/Z/Total sample\n");
         b.append("SUMMARY  : run / unit / impact evaluation CSV\n");
         b.append("EVENTS   : impact photo / graph / event CSV / text summary\n\n");
-        b.append("RECIPE\n");
+        b.append("MCSC\n");
 
         for (int i = 0; i < recipe.size(); i++) {
             RecipeUnit r = recipe.get(i);
@@ -2601,6 +2708,294 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         return new ArrayList<>(map.values());
     }
 
+    private String mcscUnitAtOffset(long offsetSec) {
+        int idx = activeRecipeIndex(Math.max(0L, offsetSec) * 1000L);
+
+        if (idx >= 0 && idx < recipe.size()) {
+            return recipe.get(idx).name;
+        }
+
+        return "AFTER MCSC";
+    }
+
+    private void reclassifyProductionEventsByMcsc() {
+        for (EventRecord r : sessionEvents) {
+            if (!isStopResumeUnit(r.unit)) {
+                r.unit = mcscUnitAtOffset(r.offsetSec);
+            }
+        }
+
+        if (timeline != null) {
+            timeline.setRecipe(recipe);
+            timeline.refresh(
+                    sessionEvents,
+                    Math.max(1L, Math.round(recipeTotalSec()))
+            );
+        }
+    }
+
+    private int csvColumn(String[] header, String name) {
+        for (int i = 0; i < header.length; i++) {
+            if (name.equals(header[i].trim())) return i;
+        }
+        return -1;
+    }
+
+    private void rebuildProductionUnitSummaryFromRaw() {
+        if (continuousFile == null || !continuousFile.exists() || recipe.isEmpty()) {
+            return;
+        }
+
+        final int size = recipe.size();
+
+        long[] count = new long[size];
+        long[] firstMs = new long[size];
+        long[] lastMs = new long[size];
+        double[] sumSq = new double[size];
+        double[] pk = new double[size];
+        double[] mx = new double[size];
+        double[] my = new double[size];
+        double[] mz = new double[size];
+
+        Arrays.fill(firstMs, -1L);
+        Arrays.fill(lastMs, -1L);
+
+        try (java.io.BufferedReader br = new java.io.BufferedReader(
+                new java.io.InputStreamReader(
+                        new java.io.FileInputStream(continuousFile),
+                        java.nio.charset.StandardCharsets.UTF_8
+                )
+        )) {
+            String headerLine = br.readLine();
+            if (headerLine == null) return;
+
+            String[] h = headerLine.split(",", -1);
+
+            int processMsCol = csvColumn(h, "ProcessElapsedMs");
+            int stateCol = csvColumn(h, "TimelineState");
+            int processCol = csvColumn(h, "Process");
+            int xCol = csvColumn(h, "X");
+            int yCol = csvColumn(h, "Y");
+            int zCol = csvColumn(h, "Z");
+            int tCol = csvColumn(h, "Total");
+
+            if (processMsCol < 0
+                    || processCol < 0
+                    || xCol < 0
+                    || yCol < 0
+                    || zCol < 0
+                    || tCol < 0) {
+                return;
+            }
+
+            String selectedProcess = String.valueOf(process.getSelectedItem());
+            String line;
+
+            while ((line = br.readLine()) != null) {
+                String[] p = line.split(",", -1);
+
+                int need = Math.max(
+                        Math.max(processMsCol, processCol),
+                        Math.max(
+                                Math.max(xCol, yCol),
+                                Math.max(zCol, tCol)
+                        )
+                );
+
+                if (p.length <= need) continue;
+                if (!selectedProcess.equals(p[processCol].trim())) continue;
+
+                if (stateCol >= 0 && p.length > stateCol) {
+                    String state = p[stateCol].trim();
+
+                    if ("AUTO_HOLD".equals(state)
+                            || "MANUAL_HOLD".equals(state)) {
+                        continue;
+                    }
+                }
+
+                try {
+                    long processMs = Long.parseLong(p[processMsCol].trim());
+                    int idx = activeRecipeIndex(processMs);
+
+                    if (idx < 0 || idx >= size) continue;
+
+                    double x = Math.abs(Double.parseDouble(p[xCol].trim()));
+                    double y = Math.abs(Double.parseDouble(p[yCol].trim()));
+                    double z = Math.abs(Double.parseDouble(p[zCol].trim()));
+                    double t = Math.abs(Double.parseDouble(p[tCol].trim()));
+
+                    if (firstMs[idx] < 0L) firstMs[idx] = processMs;
+                    lastMs[idx] = processMs;
+
+                    count[idx]++;
+                    sumSq[idx] += t * t;
+                    pk[idx] = Math.max(pk[idx], t);
+                    mx[idx] = Math.max(mx[idx], x);
+                    my[idx] = Math.max(my[idx], y);
+                    mz[idx] = Math.max(mz[idx], z);
+
+                } catch (Exception ignored) {}
+            }
+
+        } catch (Exception ignored) {
+            return;
+        }
+
+        int[] eventCount = new int[size];
+
+        for (EventRecord r : sessionEvents) {
+            if (isStopResumeUnit(r.unit)) continue;
+
+            for (int i = 0; i < recipe.size(); i++) {
+                if (recipe.get(i).name.equals(r.unit)) {
+                    eventCount[i]++;
+                    break;
+                }
+            }
+        }
+
+        unitSegments.clear();
+
+        for (int i = 0; i < size; i++) {
+            if (count[i] <= 0L) continue;
+
+            UnitSegment u = new UnitSegment();
+            u.process = String.valueOf(process.getSelectedItem());
+            u.unit = recipe.get(i).name;
+            u.durationSec = firstMs[i] >= 0L && lastMs[i] >= firstMs[i]
+                    ? Math.max(0.10, (lastMs[i] - firstMs[i]) / 1000.0)
+                    : recipe.get(i).seconds;
+            u.peak = pk[i];
+            u.rms = Math.sqrt(sumSq[i] / Math.max(1L, count[i]));
+            u.impactCount = eventCount[i];
+            u.mx = mx[i];
+            u.my = my[i];
+            u.mz = mz[i];
+            u.axis = u.mx >= u.my && u.mx >= u.mz
+                    ? "X"
+                    : (u.my >= u.mz ? "Y" : "Z");
+
+            unitSegments.add(u);
+        }
+    }
+
+    private void showMcscReviewDialog() {
+        if (running) {
+            Toast.makeText(
+                    this,
+                    "측정 종료 후 MCSC Timeline Review를 실행해주세요.",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
+        EditText editor = new EditText(this);
+        editor.setText(recipeToText());
+        editor.setTextSize(14);
+        editor.setGravity(Gravity.TOP | Gravity.START);
+        editor.setInputType(
+                android.text.InputType.TYPE_CLASS_TEXT
+                        | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+        );
+
+        TextView countLabel = tv(
+                "MCSC UNIT COUNT : " + recipe.size(),
+                12,
+                Color.rgb(55, 75, 92)
+        );
+        countLabel.setTypeface(null, 1);
+
+        LinearLayout buttons = new LinearLayout(this);
+        buttons.setOrientation(LinearLayout.HORIZONTAL);
+
+        Button minus = btn("- UNIT", Color.rgb(90, 105, 118));
+        Button plus = btn("+ UNIT", Color.rgb(0, 135, 105));
+        Button reset = btn("RESET 10", Color.rgb(67, 88, 108));
+
+        minus.setTextSize(11);
+        plus.setTextSize(11);
+        reset.setTextSize(11);
+
+        buttons.addView(minus, new LinearLayout.LayoutParams(0, dp(40), 1f));
+
+        LinearLayout.LayoutParams plusLp2 =
+                new LinearLayout.LayoutParams(0, dp(40), 1f);
+        plusLp2.setMargins(dp(5), 0, dp(5), 0);
+        buttons.addView(plus, plusLp2);
+
+        buttons.addView(reset, new LinearLayout.LayoutParams(0, dp(40), 1f));
+
+        minus.setOnClickListener(v -> changeMcscCount(editor, countLabel, -1));
+        plus.setOnClickListener(v -> changeMcscCount(editor, countLabel, 1));
+        reset.setOnClickListener(v -> resetMcsc10(editor, countLabel));
+
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(10), dp(4), dp(10), dp(6));
+
+        TextView help = tv(
+                "측정 후 실제 설비 진행시간에 맞게 Unit 이름/시간을 수정하세요. "
+                        + "적용 시 Production Impact의 Unit 위치와 Unit Summary를 RAW 데이터 기준으로 다시 계산합니다. "
+                        + "원본 RAW/Event Blackbox는 변경하지 않습니다.",
+                11,
+                Color.rgb(80, 95, 108)
+        );
+
+        box.addView(help);
+        box.addView(countLabel);
+        box.addView(buttons);
+        box.addView(
+                editor,
+                new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        dp(300)
+                )
+        );
+
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("MCSC TIMELINE REVIEW")
+                .setView(box)
+                .setPositiveButton("APPLY & RECALCULATE", (d, w) -> {
+                    ArrayList<RecipeUnit> parsed =
+                            parseRecipe(editor.getText().toString());
+
+                    if (parsed.isEmpty()) {
+                        Toast.makeText(
+                                this,
+                                "MCSC 형식을 확인해주세요.",
+                                Toast.LENGTH_LONG
+                        ).show();
+                        return;
+                    }
+
+                    recipe.clear();
+                    recipe.addAll(parsed);
+
+                    getSharedPreferences("ShockRecipe", MODE_PRIVATE)
+                            .edit()
+                            .putString(recipeKey(), recipeToText())
+                            .apply();
+
+                    reclassifyProductionEventsByMcsc();
+                    rebuildProductionUnitSummaryFromRaw();
+
+                    saveUnitSummaryCsv();
+                    saveSessionCsv();
+                    saveRunSummaryCsv();
+
+                    Toast.makeText(
+                            this,
+                            "MCSC Timeline 재계산 완료 · 원본 RAW/Blackbox 보존",
+                            Toast.LENGTH_LONG
+                    ).show();
+
+                    showSessionSummary();
+                })
+                .setNegativeButton("취소", null)
+                .show();
+    }
+
     private void showSessionSummary() {
         long now = SystemClock.elapsedRealtime();
         long durationSec = startMs > 0L ? Math.max(0L, (now - startMs) / 1000L) : 0L;
@@ -2755,6 +3150,22 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 );
             }
         }
+
+        Button mcscReview = btn(
+                "MCSC TIMELINE REVIEW / CORRECTION",
+                Color.rgb(67, 88, 108)
+        );
+        mcscReview.setTextSize(12);
+
+        LinearLayout.LayoutParams reviewLp =
+                new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        dp(48)
+                );
+        reviewLp.setMargins(0, dp(8), 0, dp(4));
+
+        box.addView(mcscReview, reviewLp);
+        mcscReview.setOnClickListener(v -> showMcscReviewDialog());
 
         TextView scrollHint = tv(
                 "↑ ↓  스크롤하여 전체 Unit 비교",
