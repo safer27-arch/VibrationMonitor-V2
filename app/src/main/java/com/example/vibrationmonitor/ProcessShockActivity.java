@@ -118,16 +118,16 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         ScrollView sv = new ScrollView(this);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(14), dp(18), dp(14), dp(28));
+        root.setPadding(dp(12), dp(8), dp(12), dp(14));
         root.setBackgroundColor(Color.rgb(238, 243, 248));
         sv.addView(root);
 
         LinearLayout h = new LinearLayout(this);
         h.setOrientation(LinearLayout.VERTICAL);
-        h.setPadding(dp(16), dp(14), dp(16), dp(14));
+        h.setPadding(dp(14), dp(10), dp(14), dp(10));
         h.setBackground(bg(Color.rgb(15, 38, 61), 18));
 
-        TextView title = tv("PROCESS SHOCK\nPROFILER", 23, Color.WHITE);
+        TextView title = tv("PROCESS SHOCK\nPROFILER", 21, Color.WHITE);
         title.setTypeface(null, 1);
         h.addView(title);
         h.addView(tv("FIELD ANALYZER · CONTINUOUS IMPACT BLACKBOX", 12, Color.rgb(185, 207, 225)));
@@ -218,7 +218,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         graph = new ShockGraph(this);
         root.addView(graph, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                dp(280)
+                dp(245)
         ));
 
         LinearLayout scaleRow = new LinearLayout(this);
@@ -252,7 +252,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         timeline = new ImpactTimelineView(this);
         root.addView(timeline, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                dp(105)
+                dp(88)
         ));
 
         dir = tv("MAIN DIRECTION : -", 16, Color.rgb(15, 38, 61));
@@ -270,7 +270,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         Button history = btn("IMPACT EVENT HISTORY", Color.rgb(42, 91, 126));
         LinearLayout.LayoutParams hp =
-                new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(54));
+                new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(50));
         hp.setMargins(0, dp(9), 0, 0);
         root.addView(history, hp);
         history.setOnClickListener(v -> showHistory());
@@ -279,19 +279,29 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         Button stop = btn("STOP & ANALYZE", Color.rgb(190, 55, 55));
 
         LinearLayout.LayoutParams p1 =
-                new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(58));
+                new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(52));
         p1.setMargins(0, dp(9), 0, 0);
         root.addView(start, p1);
 
         LinearLayout.LayoutParams p2 =
-                new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(58));
+                new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(52));
         p2.setMargins(0, dp(9), 0, 0);
         root.addView(stop, p2);
 
         start.setOnClickListener(v -> startMon());
         stop.setOnClickListener(v -> stopMon());
 
+        // Safe area for Android edge-to-edge system bars.
+        sv.setClipToPadding(false);
+        sv.setOnApplyWindowInsetsListener((v, insets) -> {
+            int topInset = insets.getSystemWindowInsetTop();
+            int bottomInset = insets.getSystemWindowInsetBottom();
+            v.setPadding(0, topInset, 0, bottomInset);
+            return insets;
+        });
+
         setContentView(sv);
+        sv.requestApplyInsets();
         setupCamera();
     }
 

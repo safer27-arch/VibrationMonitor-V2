@@ -611,7 +611,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         final int purple=Color.rgb(111,71,170), soft=Color.rgb(238,243,247);
 
         root.removeAllViews();
-        root.setPadding((int)(12*den),(int)(12*den),(int)(12*den),(int)(70*den));
+        root.setPadding((int)(10*den),(int)(8*den),(int)(10*den),(int)(18*den));
         root.setBackgroundColor(Color.rgb(241,245,248));
 
         android.graphics.drawable.GradientDrawable headerBg=new android.graphics.drawable.GradientDrawable();
@@ -621,7 +621,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         title.setText("VIBRATION MONITOR"); title.setTextSize(20); title.setTextColor(Color.WHITE);
         title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         logo.setBackgroundColor(Color.WHITE); logo.setPadding((int)(8*den),(int)(5*den),(int)(8*den),(int)(5*den));
-        LinearLayout.LayoutParams finalHeaderLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(100*den)); finalHeaderLp.setMargins(0,(int)(4*den),0,0); root.addView(header,finalHeaderLp);
+        LinearLayout.LayoutParams finalHeaderLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(90*den)); finalHeaderLp.setMargins(0,(int)(2*den),0,0); root.addView(header,finalHeaderLp);
 
         TextView sub=new TextView(this);
         sub.setText("REAL-TIME 3-AXIS CONDITION MONITORING"); sub.setTextSize(11); sub.setTextColor(muted);
@@ -650,7 +650,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         graphBg.setColor(Color.WHITE);graphBg.setCornerRadius(20*den);graphBg.setStroke((int)(1*den),Color.rgb(218,226,233));graphCard.setBackground(graphBg);
         TextView graphTitle=new TextView(this);graphTitle.setText("LIVE VIBRATION");graphTitle.setTextSize(13);graphTitle.setTextColor(ink);
         graphTitle.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);graphTitle.setPadding((int)(5*den),(int)(2*den),0,(int)(6*den));graphCard.addView(graphTitle);
-        graphCard.addView(graph,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(230*den)));
+        graphCard.addView(graph,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(210*den)));
         graphModes.setPadding(0,(int)(6*den),0,0);
         for(int i=0;i<graphModes.getChildCount();i++){Button bm=(Button)graphModes.getChildAt(i);bm.setTextSize(11);bm.setTextColor(ink);bm.setAllCaps(false);bm.setMinHeight((int)(40*den));bm.setBackgroundTintList(android.content.res.ColorStateList.valueOf(soft));}
         graphCard.addView(graphModes);
@@ -688,10 +688,10 @@ public class MainActivity extends Activity implements SensorEventListener {
         Button[] mains={startButton,stopButton,resetButton,csvButton,processShockButton,historyButton};for(Button mb:mains){mb.setTextColor(Color.WHITE);mb.setTextSize(14);mb.setAllCaps(false);mb.setMinHeight((int)(52*den));}
         startButton.setText("▶  측정 시작");stopButton.setText("■  측정 중지");resetButton.setText("↻  값 초기화");csvButton.setText("CSV 데이터");processShockButton.setText("⚡  공정 충격 분석 / PROCESS SHOCK");historyButton.setText("진동 이력 관리");
         startButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(green));stopButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(red));resetButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(91,108,123)));csvButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(blue));processShockButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(purple));historyButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(navy));
-        LinearLayout.LayoutParams half=new LinearLayout.LayoutParams(0,(int)(54*den),1f);half.setMargins((int)(3*den),(int)(3*den),(int)(3*den),(int)(3*den));
+        LinearLayout.LayoutParams half=new LinearLayout.LayoutParams(0,(int)(50*den),1f);half.setMargins((int)(3*den),(int)(3*den),(int)(3*den),(int)(3*den));
         row1.addView(startButton,new LinearLayout.LayoutParams(half));row1.addView(stopButton,new LinearLayout.LayoutParams(half));row2.addView(resetButton,new LinearLayout.LayoutParams(half));row2.addView(csvButton,new LinearLayout.LayoutParams(half));root.addView(row1);root.addView(row2);
-        LinearLayout.LayoutParams processLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(58*den));processLp.setMargins((int)(3*den),(int)(6*den),(int)(3*den),(int)(4*den));root.addView(processShockButton,processLp);
-        LinearLayout.LayoutParams historyLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(54*den));historyLp.setMargins((int)(3*den),(int)(3*den),(int)(3*den),(int)(8*den));root.addView(historyButton,historyLp);
+        LinearLayout.LayoutParams processLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(52*den));processLp.setMargins((int)(3*den),(int)(6*den),(int)(3*den),(int)(4*den));root.addView(processShockButton,processLp);
+        LinearLayout.LayoutParams historyLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(50*den));historyLp.setMargins((int)(3*den),(int)(3*den),(int)(3*den),(int)(8*den));root.addView(historyButton,historyLp);
 
         Button settingsToggle=new Button(this);settingsToggle.setText("⚙  알림 / Telegram 설정");settingsToggle.setTextColor(ink);settingsToggle.setTextSize(13);settingsToggle.setAllCaps(false);settingsToggle.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(225,232,237)));
         LinearLayout settingsPanel=new LinearLayout(this);settingsPanel.setOrientation(LinearLayout.VERTICAL);settingsPanel.setPadding((int)(12*den),(int)(8*den),(int)(12*den),(int)(12*den));settingsPanel.setVisibility(View.GONE);
@@ -701,7 +701,18 @@ public class MainActivity extends Activity implements SensorEventListener {
         root.addView(settingsToggle);root.addView(settingsPanel);
 
         scroll.addView(root);
+
+        // Safe area for Android edge-to-edge system bars.
+        scroll.setClipToPadding(false);
+        scroll.setOnApplyWindowInsetsListener((v, insets) -> {
+            int topInset = insets.getSystemWindowInsetTop();
+            int bottomInset = insets.getSystemWindowInsetBottom();
+            v.setPadding(0, topInset, 0, bottomInset);
+            return insets;
+        });
+
         setContentView(scroll);
+        scroll.requestApplyInsets();
 
         // GPS -> Camera sequential permission flow
         setupLocation();
