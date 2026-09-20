@@ -19,7 +19,20 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     private EditText lineInput, equipmentInput;
     private ShockGraph graph;
     private ImpactTimelineView timeline;
+    private TextView segmentInfo;
     private long lastCheckpointMs = 0L;
+
+    private final ArrayList<UnitSegment> unitSegments = new ArrayList<>();
+    private long segmentStartMs = 0L;
+    private long segmentCount = 0L;
+    private double segmentSumSq = 0.0;
+    private double segmentPeak = 0.0;
+    private double segmentMaxX = 0.0;
+    private double segmentMaxY = 0.0;
+    private double segmentMaxZ = 0.0;
+    private int segmentImpactStartCount = 0;
+    private String segmentProcess = "";
+    private String segmentUnit = "";
 
     private boolean running = false;
     private boolean calibrating = false;
@@ -167,6 +180,15 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         unit = new Spinner(this);
         root.addView(unit);
         units(0);
+
+        segmentInfo = tv(
+                "UNIT SEGMENT : READY",
+                12,
+                Color.rgb(55, 75, 92)
+        );
+        segmentInfo.setBackground(bg(Color.WHITE, 10));
+        segmentInfo.setPadding(dp(10), dp(7), dp(10), dp(7));
+        root.addView(segmentInfo);
 
         process.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override
@@ -358,9 +380,20 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         pre.clear();
         event.clear();
         sessionEvents.clear();
+        unitSegments.clear();
         graph.clear();
         timeline.clear();
         lastCheckpointMs = 0L;
+        segmentStartMs = 0L;
+        segmentCount = 0L;
+        segmentSumSq = 0.0;
+        segmentPeak = 0.0;
+        segmentMaxX = 0.0;
+        segmentMaxY = 0.0;
+        segmentMaxZ = 0.0;
+        segmentImpactStartCount = 0;
+        segmentProcess = "";
+        segmentUnit = "";
 
         elapsed.setText("CALIBRATING 2.0s");
         total.setText("0.000 m/s²");
@@ -368,7 +401,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         rms.setText("RMS\n0.000");
         impact.setText("IMPACT\n0");
         dir.setText("MAIN DIRECTION : -");
-        last.setText("LAST IMPACT : -\n측정 중 공정/UNIT을 변경해도 이벤트별로 자동 태깅합니다.");
+        segmentInfo.setText("UNIT SEGMENT : CALIBRATING");
+        last.setText("LAST IMPACT : -\n측정 중 공정/UNIT을 변경하면 구간별 Peak/RMS/Impact를 자동 비교합니다.");
 
         status.setText("● SENSOR CALIBRATION");
         status.setTextColor(Color.rgb(255, 185, 70));
@@ -385,6 +419,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         if (!running) return;
 
         if (eventOn) finishEvent();
+        finalizeUnitSegment(SystemClock.elapsedRealtime());
 
         running = false;
         calibrating = false;
@@ -395,6 +430,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         status.setTextColor(Color.rgb(255, 185, 70));
 
         saveSessionCsv();
+        saveUnitSummaryCsv();
         clearActiveCheckpoint();
         showSessionSummary();
     }
@@ -461,11 +497,30 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 total.setText("0.000 m/s²");
                 status.setText("● MONITORING · BACKGROUND READY");
                 status.setTextColor(Color.rgb(80, 220, 150));
+                startUnitSegment(now);
 
                 Toast.makeText(this, "센서 안정화 완료 · 충격 감시 시작", Toast.LENGTH_SHORT).show();
             }
             return;
         }
+
+        String selectedProcess = String.valueOf(process.getSelectedItem());
+        String selectedUnit = String.valueOf(unit.getSelectedItem());
+
+        if (segmentStartMs <= 0L) {
+            startUnitSegment(now);
+        } else if (!selectedProcess.equals(segmentProcess)
+                || !selectedUnit.equals(segmentUnit)) {
+            finalizeUnitSegment(now);
+            startUnitSegment(now);
+        }
+
+        segmentCount++;
+        segmentSumSq += t * t;
+        segmentPeak = Math.max(segmentPeak, t);
+        segmentMaxX = Math.max(segmentMaxX, Math.abs(x));
+        segmentMaxY = Math.max(segmentMaxY, Math.abs(y));
+        segmentMaxZ = Math.max(segmentMaxZ, Math.abs(z));
 
         P p = new P(System.currentTimeMillis(), now, x, y, z, t);
 
@@ -538,6 +593,26 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             peak.setText(String.format(Locale.US, "PEAK\n%.3f", sessionPeak));
             rms.setText(String.format(Locale.US, "RMS\n%.3f", Math.sqrt(sumSq / Math.max(1L, n))));
             impact.setText("IMPACT\n" + impactCount);
+
+            long segmentSec = segmentStartMs > 0L
+                    ? Math.max(0L, (now - segmentStartMs) / 1000L)
+                    : 0L;
+            double segmentRms = segmentCount > 0L
+                    ? Math.sqrt(segmentSumSq / segmentCount)
+                    : 0.0;
+            int segmentImpacts = Math.max(0, impactCount - segmentImpactStartCount);
+
+            segmentInfo.setText(String.format(
+                    Locale.US,
+                    "UNIT SEGMENT · %s > %s\n%02d:%02d · Peak %.3f · RMS %.3f · Impact %d",
+                    blank(segmentProcess),
+                    blank(segmentUnit),
+                    segmentSec / 60,
+                    segmentSec % 60,
+                    segmentPeak,
+                    segmentRms,
+                    segmentImpacts
+            ));
 
             float ax = Math.abs(x);
             float ay = Math.abs(y);
@@ -877,6 +952,106 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         } catch (Exception ignored) {}
     }
 
+    private void startUnitSegment(long now) {
+        segmentStartMs = now;
+        segmentCount = 0L;
+        segmentSumSq = 0.0;
+        segmentPeak = 0.0;
+        segmentMaxX = 0.0;
+        segmentMaxY = 0.0;
+        segmentMaxZ = 0.0;
+        segmentImpactStartCount = impactCount;
+        segmentProcess = String.valueOf(process.getSelectedItem());
+        segmentUnit = String.valueOf(unit.getSelectedItem());
+
+        if (segmentInfo != null) {
+            segmentInfo.setText(
+                    "UNIT SEGMENT · "
+                            + blank(segmentProcess)
+                            + " > "
+                            + blank(segmentUnit)
+            );
+        }
+    }
+
+    private void finalizeUnitSegment(long now) {
+        if (segmentStartMs <= 0L || segmentCount <= 0L) {
+            segmentStartMs = 0L;
+            return;
+        }
+
+        UnitSegment r = new UnitSegment();
+        r.process = segmentProcess;
+        r.unit = segmentUnit;
+        r.durationSec = Math.max(0.0, (now - segmentStartMs) / 1000.0);
+        r.peak = segmentPeak;
+        r.rms = Math.sqrt(segmentSumSq / Math.max(1L, segmentCount));
+        r.impactCount = Math.max(0, impactCount - segmentImpactStartCount);
+        r.mx = segmentMaxX;
+        r.my = segmentMaxY;
+        r.mz = segmentMaxZ;
+        r.axis = r.mx >= r.my && r.mx >= r.mz
+                ? "X"
+                : (r.my >= r.mz ? "Y" : "Z");
+
+        if (r.durationSec >= 0.10) {
+            unitSegments.add(r);
+        }
+
+        segmentStartMs = 0L;
+        segmentCount = 0L;
+        segmentSumSq = 0.0;
+        segmentPeak = 0.0;
+        segmentMaxX = 0.0;
+        segmentMaxY = 0.0;
+        segmentMaxZ = 0.0;
+    }
+
+    private void saveUnitSummaryCsv() {
+        if (unitSegments.isEmpty()) return;
+
+        String stamp = new java.text.SimpleDateFormat(
+                "yyyyMMdd_HHmmss",
+                Locale.US
+        ).format(new java.util.Date());
+
+        java.io.File f = new java.io.File(
+                eventDir(),
+                "UNIT_SUMMARY_" + stamp + ".csv"
+        );
+
+        try (java.io.PrintWriter o = new java.io.PrintWriter(
+                new java.io.OutputStreamWriter(
+                        new java.io.FileOutputStream(f),
+                        java.nio.charset.StandardCharsets.UTF_8
+                )
+        )) {
+            o.println(
+                    "Segment,Process,UnitAction,DurationSec,Peak,RMS,ImpactCount,Axis,XPeak,YPeak,ZPeak"
+            );
+
+            int no = 1;
+
+            for (UnitSegment r : unitSegments) {
+                o.println(String.format(
+                        Locale.US,
+                        "%d,%s,%s,%.3f,%.6f,%.6f,%d,%s,%.6f,%.6f,%.6f",
+                        no++,
+                        safe(r.process),
+                        safe(r.unit),
+                        r.durationSec,
+                        r.peak,
+                        r.rms,
+                        r.impactCount,
+                        r.axis,
+                        r.mx,
+                        r.my,
+                        r.mz
+                ));
+            }
+        } catch (Exception ignored) {}
+    }
+
     private void saveSessionCsv() {
         if (sessionEvents.isEmpty()) return;
 
@@ -967,7 +1142,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     private ArrayList<UnitAggregate> buildUnitAggregates() {
         LinkedHashMap<String, UnitAggregate> map = new LinkedHashMap<>();
 
-        for (EventRecord r : sessionEvents) {
+        for (UnitSegment r : unitSegments) {
             String key = blank(r.process) + " > " + blank(r.unit);
             UnitAggregate a = map.get(key);
 
@@ -977,9 +1152,11 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 map.put(key, a);
             }
 
-            a.count++;
+            a.count += r.impactCount;
             a.maxPeak = Math.max(a.maxPeak, r.peak);
-            a.rmsSum += r.rms;
+            a.rmsWeighted += r.rms * Math.max(0.001, r.durationSec);
+            a.durationSec += r.durationSec;
+            a.segmentCount++;
         }
 
         return new ArrayList<>(map.values());
@@ -1049,16 +1226,18 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             box.addView(chartTitle);
             box.addView(new SessionBarsView(this, sessionEvents),
                     new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(220)));
+        }
 
+        if (!unitSegments.isEmpty()) {
             ArrayList<UnitAggregate> aggregates = buildUnitAggregates();
-            TextView unitTitle = tv("UNIT SUMMARY · MAX PEAK / IMPACT COUNT", 13, Color.rgb(15, 38, 61));
+            TextView unitTitle = tv("UNIT SUMMARY · PEAK / RMS / IMPACT / TIME", 13, Color.rgb(15, 38, 61));
             unitTitle.setTypeface(null, 1);
             box.addView(unitTitle);
             box.addView(
                     new UnitSummaryView(this, aggregates),
                     new LinearLayout.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
-                            dp(Math.max(180, aggregates.size() * 74))
+                            dp(Math.max(190, aggregates.size() * 82))
                     )
             );
         }
@@ -1487,14 +1666,31 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         double peak, rms, duration, mx, my, mz;
     }
 
+    static class UnitSegment {
+        String process = "-";
+        String unit = "-";
+        String axis = "-";
+        double durationSec = 0.0;
+        double peak = 0.0;
+        double rms = 0.0;
+        double mx = 0.0;
+        double my = 0.0;
+        double mz = 0.0;
+        int impactCount = 0;
+    }
+
     static class UnitAggregate {
         String label = "-";
         int count = 0;
+        int segmentCount = 0;
         double maxPeak = 0.0;
-        double rmsSum = 0.0;
+        double rmsWeighted = 0.0;
+        double durationSec = 0.0;
 
         double avgRms() {
-            return count > 0 ? rmsSum / count : 0.0;
+            return durationSec > 0.0
+                    ? rmsWeighted / durationSec
+                    : 0.0;
         }
     }
 
@@ -1592,10 +1788,11 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 c.drawText(
                         String.format(
                                 Locale.US,
-                                "MAX %.2f  ·  RMS %.2f  ·  %d events",
+                                "MAX %.2f · RMS %.2f · %d events · %.1fs",
                                 a.maxPeak,
                                 a.avgRms(),
-                                a.count
+                                a.count,
+                                a.durationSec
                         ),
                         left,
                         y + 24f,
