@@ -30,6 +30,16 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Restore fixed signing keystore
+        env:
+          VIBRATION_KEYSTORE_BASE64: ${{ secrets.VIBRATION_KEYSTORE_BASE64 }}
+          VIBRATION_KEYSTORE_PASSWORD: ${{ secrets.VIBRATION_KEYSTORE_PASSWORD }}
+          VIBRATION_KEY_ALIAS: ${{ secrets.VIBRATION_KEY_ALIAS }}
+        run: |
+          test -n "$VIBRATION_KEYSTORE_BASE64"
+          echo "$VIBRATION_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/vibration-release.jks"
+          keytool -list -keystore "$RUNNER_TEMP/vibration-release.jks" -storepass "$VIBRATION_KEYSTORE_PASSWORD" -alias "$VIBRATION_KEY_ALIAS" >/dev/null
+
       - name: Repair Android project
         run: |
           mkdir -p app
@@ -70,12 +80,27 @@ jobs:
               namespace 'com.example.vibrationmonitor'
               compileSdk 35
 
+              signingConfigs {
+                  release {
+                      storeFile file(System.getenv('VIBRATION_KEYSTORE_FILE'))
+                      storePassword System.getenv('VIBRATION_KEYSTORE_PASSWORD')
+                      keyAlias System.getenv('VIBRATION_KEY_ALIAS')
+                      keyPassword System.getenv('VIBRATION_KEYSTORE_PASSWORD')
+                  }
+              }
+
               defaultConfig {
                   applicationId 'com.example.vibrationmonitor.v2'
                   minSdk 26
                   targetSdk 35
                   versionCode 3
                   versionName '3.0-PROCESS-SHOCK'
+              }
+
+              buildTypes {
+                  debug {
+                      signingConfig signingConfigs.release
+                  }
               }
           }
           EOF
@@ -84,6 +109,10 @@ jobs:
         run: gradle :app:tasks --all
 
       - name: Build APK
+        env:
+          VIBRATION_KEYSTORE_FILE: ${{ runner.temp }}/vibration-release.jks
+          VIBRATION_KEYSTORE_PASSWORD: ${{ secrets.VIBRATION_KEYSTORE_PASSWORD }}
+          VIBRATION_KEY_ALIAS: ${{ secrets.VIBRATION_KEY_ALIAS }}
         run: gradle :app:assembleDebug
 
       - name: Upload APK
