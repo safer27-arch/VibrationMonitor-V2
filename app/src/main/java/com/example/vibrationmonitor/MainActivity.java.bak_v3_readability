@@ -260,91 +260,418 @@ public class MainActivity extends Activity implements SensorEventListener {
                 "현재값 : 0.000 m/s²"
         );
         avgText = createValueText(
-                "평균  0.000"
+                "평균값 : 0.000 m/s²"
         );
         maxText = createValueText(
-                "최대  0.000"
+                "최대값 : 0.000 m/s²"
         );
         minText = createValueText(
-                "최소  0.000"
+                "최소값 : 0.000 m/s²"
         );
 
         axisSummaryText = createValueText(
                 "X  0.000   Y  0.000   Z  0.000   TOTAL  0.000 m/s²"
         );
-        axisSummaryText.setTextSize(13);axisSummaryText.setTextColor(ink);
-        axisSummaryText.setTypeface(android.graphics.Typeface.MONOSPACE);
-        axisSummaryText.setVisibility(View.GONE);
+        axisSummaryText.setTextSize(18);
+        directionText = createValueText("주 진동 방향 : -");
+        directionText.setTextSize(18);
+        samplingText = createValueText("Sampling : 0.0 Hz");
+        samplingText.setTextSize(15);
 
-        directionText.setTextSize(15);directionText.setTextColor(purple);
-        directionText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        directionText.setGravity(Gravity.CENTER);
+        TextView thresholdLabel =
+                createValueText("SPEC / Threshold");
 
-        LinearLayout axisGrid=new LinearLayout(this);
-        axisGrid.setOrientation(LinearLayout.HORIZONTAL);
-        axisGrid.setGravity(Gravity.CENTER);
+        thresholdInput = new EditText(this);
+        float savedSpec = getSharedPreferences("VibrationSettings", MODE_PRIVATE).getFloat("spec", 2.0f);
+        thresholdInput.setText(String.valueOf(savedSpec));
+        thresholdInput.setTextSize(20);
+        thresholdInput.setHint("예: 2.0");
 
-        final TextView axisXCard=new TextView(this);
-        final TextView axisYCard=new TextView(this);
-        final TextView axisZCard=new TextView(this);
-        final TextView axisTotalCard=new TextView(this);
+        thresholdInput.setInputType(
+                android.text.InputType.TYPE_CLASS_NUMBER |
+                android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+        );
 
-        TextView[] axisCards={axisXCard,axisYCard,axisZCard,axisTotalCard};
-        String[] axisNames={"X","Y","Z","TOTAL"};
-        int[] axisAccent={
-            Color.rgb(35,105,170),
-            Color.rgb(0,153,112),
-            Color.rgb(214,132,28),
-            purple
-        };
+        alarmText = new TextView(this);
+        alarmText.setText("상태 : 정상");
+        alarmText.setTextSize(22);
+        alarmText.setGravity(Gravity.CENTER);
+        alarmText.setTextColor(Color.rgb(0, 130, 0));
+        alarmText.setPadding(10, 20, 10, 20);
 
-        for(int ai=0;ai<axisCards.length;ai++){
-            TextView av=axisCards[ai];
-            av.setText(axisNames[ai]+"\n0.000");
-            av.setTextSize(ai==3?12:13);
-            av.setTextColor(axisAccent[ai]);
-            av.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-            av.setGravity(Gravity.CENTER);
-            av.setPadding((int)(4*den),(int)(9*den),(int)(4*den),(int)(9*den));
+        eventText = new TextView(this);
+        eventText.setText(
+                "이벤트 : 0회\n최근 3초 데이터 대기 중"
+        );
+        eventText.setTextSize(16);
+        eventText.setGravity(Gravity.CENTER);
+        eventText.setTextColor(Color.DKGRAY);
+        eventText.setPadding(10, 10, 10, 20);
 
-            android.graphics.drawable.GradientDrawable abg=new android.graphics.drawable.GradientDrawable();
-            abg.setColor(Color.rgb(247,249,251));
-            abg.setCornerRadius(12*den);
-            abg.setStroke((int)(1*den),Color.rgb(225,231,236));
-            av.setBackground(abg);
-
-            LinearLayout.LayoutParams alp=new LinearLayout.LayoutParams(0,(int)(60*den),1f);
-            alp.setMargins((int)(3*den),(int)(2*den),(int)(3*den),(int)(4*den));
-            axisGrid.addView(av,alp);
-        }
-
-        axisSummaryText.addTextChangedListener(new android.text.TextWatcher(){
-            @Override public void beforeTextChanged(CharSequence s,int start,int count,int after){}
-            @Override public void onTextChanged(CharSequence s,int start,int before,int count){}
-            @Override public void afterTextChanged(android.text.Editable e){
-                java.util.regex.Matcher mm=
-                    java.util.regex.Pattern.compile("[-+]?\\d+(?:\\.\\d+)?").matcher(e.toString());
-
-                double[] vv={0.0,0.0,0.0,0.0};
-                int vi=0;
-                while(mm.find() && vi<4){
-                    try{vv[vi]=Double.parseDouble(mm.group());}catch(Exception ignored){}
-                    vi++;
-                }
-
-                axisXCard.setText(String.format(java.util.Locale.US,"X\n%.3f",vv[0]));
-                axisYCard.setText(String.format(java.util.Locale.US,"Y\n%.3f",vv[1]));
-                axisZCard.setText(String.format(java.util.Locale.US,"Z\n%.3f",vv[2]));
-                axisTotalCard.setText(String.format(java.util.Locale.US,"TOTAL\n%.3f",vv[3]));
+        Button specSaveButton = new Button(this);
+        specSaveButton.setText("SPEC 저장 / 적용");
+        specSaveButton.setOnClickListener(v -> {
+            try {
+                double value = Double.parseDouble(thresholdInput.getText().toString().trim());
+                if (value <= 0) throw new Exception();
+                getSharedPreferences("VibrationSettings", MODE_PRIVATE)
+                        .edit().putFloat("spec", (float)value).apply();
+                graph.setThreshold(value);
+                android.widget.Toast.makeText(
+                        this,
+                        String.format(Locale.US, "SPEC %.2f m/s² 저장 완료", value),
+                        android.widget.Toast.LENGTH_SHORT
+                ).show();
+            } catch (Exception e) {
+                float oldValue = getSharedPreferences("VibrationSettings", MODE_PRIVATE)
+                        .getFloat("spec", 2.0f);
+                thresholdInput.setText(String.valueOf(oldValue));
+                android.widget.Toast.makeText(
+                        this,
+                        "0보다 큰 숫자를 입력하세요.",
+                        android.widget.Toast.LENGTH_SHORT
+                ).show();
             }
         });
 
-        axisCard.addView(axisGrid);
-        axisCard.addView(directionText);
+        TextView emailLabel = createValueText("알람 수신 이메일");
 
-        axisSummaryText.setText(axisSummaryText.getText().toString());
+        emailInput = new EditText(this);
+        emailInput.setText(
+                getSharedPreferences(
+                        "VibrationSettings",
+                        MODE_PRIVATE
+                ).getString(
+                        "notify_email",
+                        ""
+                )
+        );
+        emailInput.setHint("예: name@gmail.com");
+        emailInput.setTextSize(18);
+        emailInput.setInputType(
+                android.text.InputType.TYPE_CLASS_TEXT |
+                android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+        );
 
-        // ===== V3 READABILITY FIX =====
+        Button emailSaveButton = new Button(this);
+        emailSaveButton.setText("이메일 저장");
+
+        emailSaveButton.setOnClickListener(v -> {
+
+            String email =
+                    emailInput.getText()
+                            .toString()
+                            .trim();
+
+            getSharedPreferences(
+                    "VibrationSettings",
+                    MODE_PRIVATE
+            )
+            .edit()
+            .putString(
+                    "notify_email",
+                    email
+            )
+            .apply();
+
+            android.widget.Toast.makeText(
+                    this,
+                    email.isEmpty()
+                            ? "이메일 주소가 비어 있습니다."
+                            : "알람 이메일 저장 완료",
+                    android.widget.Toast.LENGTH_SHORT
+            ).show();
+        });
+
+        Button startButton = new Button(this);
+        startButton.setText("측정 시작");
+
+        Button stopButton = new Button(this);
+        stopButton.setText("측정 중지");
+
+        Button resetButton = new Button(this);
+        resetButton.setText("값 초기화");
+
+        Button csvButton = new Button(this);
+        csvButton.setText("저장된 CSV 파일");
+
+        Button processShockButton = new Button(this);
+        processShockButton.setText("공정 충격 분석 / PROCESS SHOCK");
+        processShockButton.setOnClickListener(v -> startActivity(
+                new android.content.Intent(this, ProcessShockActivity.class)
+        ));
+
+        Button historyButton = new Button(this);
+        historyButton.setText("진동 이력 관리");
+        historyButton.setOnClickListener(v -> {
+            android.content.Intent intent =
+                    new android.content.Intent(this, HistoryActivity.class);
+            intent.putExtra("spec", getThreshold());
+            startActivity(intent);
+        });
+        csvButton.setOnClickListener(v -> {
+            java.io.File dir = new java.io.File(getExternalFilesDir(null), "VibrationData");
+            java.io.File[] files = dir.listFiles();
+            if (files == null || files.length == 0) {
+                new android.app.AlertDialog.Builder(this).setTitle("저장된 CSV 파일").setMessage("저장된 CSV 파일이 없습니다.").setPositiveButton("확인", null).show();
+                return;
+            }
+            java.util.ArrayList<String> names = new java.util.ArrayList<>();
+            for (java.io.File f : files) if (f.getName().endsWith(".csv")) names.add(f.getName());
+            if (names.isEmpty()) {
+                new android.app.AlertDialog.Builder(this).setTitle("저장된 CSV 파일").setMessage("저장된 CSV 파일이 없습니다.").setPositiveButton("확인", null).show();
+                return;
+            }
+            java.util.Collections.sort(names, java.util.Collections.reverseOrder());
+            new android.app.AlertDialog.Builder(this).setTitle("저장된 CSV 파일").setItems(names.toArray(new String[0]), (dialog, which) -> showCsvGraph(new java.io.File(dir, names.get(which)))).setNegativeButton("닫기", null).show();
+        });
+
+        startButton.setOnClickListener(
+                v -> startMeasurement()
+        );
+
+        stopButton.setOnClickListener(
+                v -> stopMeasurement()
+        );
+
+        resetButton.setOnClickListener(
+                v -> resetValues()
+        );
+
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.VERTICAL);
+        header.setGravity(Gravity.CENTER);
+        header.setPadding(12, 8, 12, 8);
+        header.setBackgroundColor(Color.WHITE);
+        title.setTextColor(Color.rgb(25,45,65));
+        title.setGravity(Gravity.CENTER); title.setSingleLine(true); title.setText("VIBRATION MONITOR"); title.setTextSize(22);
+        header.addView(title, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        android.widget.ImageView logo = new android.widget.ImageView(this);
+        logo.setImageResource(com.example.vibrationmonitor.R.drawable.lges_logo);
+        logo.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
+        LinearLayout.LayoutParams logoLp0=new LinearLayout.LayoutParams((int)(170*getResources().getDisplayMetrics().density),(int)(34*getResources().getDisplayMetrics().density)); logoLp0.gravity=Gravity.CENTER; header.addView(logo,logoLp0);
+        root.addView(header);
+        root.addView(sensorStatus);
+        root.addView(locationText);
+        root.addView(cameraText);
+
+        // 그래프가 제목 바로 아래 보이도록 순서 조정
+        root.removeView(graph);
+        root.addView(
+                graph,
+                4,
+                new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        600
+                )
+        );
+
+        root.addView(currentText);
+        root.addView(avgText);
+        root.addView(maxText);
+        root.addView(minText);
+        root.addView(axisSummaryText);
+        root.addView(directionText);
+        root.addView(samplingText);
+
+        LinearLayout graphModes = new LinearLayout(this);
+        graphModes.setOrientation(LinearLayout.HORIZONTAL);
+        String[] modeNames = {"ALL","X","Y","Z","TOTAL"};
+        for (String m : modeNames) {
+            Button b = new Button(this);
+            b.setText(m);
+            b.setTextSize(12);
+            b.setAllCaps(false);
+            b.setOnClickListener(v -> graph.setMode(m));
+            graphModes.addView(b, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        }
+        root.addView(graphModes);
+        root.addView(thresholdLabel);
+        root.addView(thresholdInput);
+        root.addView(specSaveButton);
+
+        root.addView(emailLabel);
+        root.addView(emailInput);
+        root.addView(emailSaveButton);
+
+        // ===== Telegram 설정 =====
+        android.widget.TextView telegramTitle = new android.widget.TextView(this);
+        telegramTitle.setText("Telegram 자동 알림");
+        telegramTitle.setTextSize(18f);
+        telegramTitle.setPadding(0, 24, 0, 8);
+
+        android.widget.EditText telegramTokenInput = new android.widget.EditText(this);
+        telegramTokenInput.setHint("Telegram Bot Token");
+        telegramTokenInput.setSingleLine(true);
+        telegramTokenInput.setInputType(
+                android.text.InputType.TYPE_CLASS_TEXT |
+                android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+
+        android.widget.EditText telegramChatIdInput = new android.widget.EditText(this);
+        telegramChatIdInput.setHint("Telegram Chat ID 여러 개 입력 (쉼표 또는 줄바꿈 구분)");
+        telegramChatIdInput.setSingleLine(false);
+        telegramChatIdInput.setMinLines(2);
+
+        android.widget.Button telegramSaveButton = new android.widget.Button(this);
+        telegramSaveButton.setText("Telegram 저장");
+
+        android.widget.Button telegramTestButton = new android.widget.Button(this);
+        telegramTestButton.setText("Telegram 테스트 전송");
+
+        android.widget.TextView telegramStatus = new android.widget.TextView(this);
+        telegramStatus.setText("Telegram : 설정 필요");
+        telegramStatus.setPadding(0, 6, 0, 12);
+
+        android.content.SharedPreferences telegramPrefs =
+                getSharedPreferences("TelegramSettings", MODE_PRIVATE);
+
+        telegramTokenInput.setText(telegramPrefs.getString("bot_token", ""));
+        telegramChatIdInput.setText(telegramPrefs.getString("chat_id", ""));
+
+        if (!telegramTokenInput.getText().toString().trim().isEmpty()
+                && !telegramChatIdInput.getText().toString().trim().isEmpty()) {
+            telegramStatus.setText("Telegram : 설정 저장됨");
+        }
+
+        telegramSaveButton.setOnClickListener(v -> {
+            String token = telegramTokenInput.getText().toString().trim();
+            String chatId = telegramChatIdInput.getText().toString().trim();
+
+            if (token.isEmpty() || chatId.isEmpty()) {
+                android.widget.Toast.makeText(this,
+                        "Bot Token과 Chat ID를 입력해주세요.",
+                        android.widget.Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            telegramPrefs.edit()
+                    .putString("bot_token", token)
+                    .putString("chat_id", chatId)
+                    .apply();
+
+            telegramStatus.setText("Telegram : 설정 저장됨");
+            android.widget.Toast.makeText(this,
+                    "Telegram 설정을 저장했습니다.",
+                    android.widget.Toast.LENGTH_SHORT).show();
+        });
+
+        telegramTestButton.setOnClickListener(v -> {
+            String token = telegramTokenInput.getText().toString().trim();
+            String chatId = telegramChatIdInput.getText().toString().trim();
+
+            if (token.isEmpty() || chatId.isEmpty()) {
+                android.widget.Toast.makeText(this,
+                        "먼저 Bot Token과 Chat ID를 입력해주세요.",
+                        android.widget.Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            telegramStatus.setText("Telegram : 테스트 전송 중...");
+
+            TelegramSender.sendMessageMulti(
+                    token,
+                    chatId,
+                    "✅ Vibration Monitor 연결 테스트\nTelegram 다중 자동 알림 연결이 정상입니다.",
+                    (success, message) -> runOnUiThread(() -> {
+                        if (success) {
+                            telegramStatus.setText("Telegram : 테스트 전송 성공");
+                            android.widget.Toast.makeText(this,
+                                    "Telegram 테스트 메시지 전송 성공",
+                                    android.widget.Toast.LENGTH_LONG).show();
+                        } else {
+                            telegramStatus.setText("Telegram : 전송 실패 (" + message + ")");
+                            android.widget.Toast.makeText(this,
+                                    "Telegram 전송 실패: " + message,
+                                    android.widget.Toast.LENGTH_LONG).show();
+                        }
+                    })
+            );
+        });
+
+        root.addView(telegramTitle);
+        root.addView(telegramTokenInput);
+        root.addView(telegramChatIdInput);
+        root.addView(telegramSaveButton);
+        root.addView(telegramTestButton);
+        root.addView(telegramStatus);
+
+        root.addView(alarmText);
+        root.addView(eventText);
+        root.addView(startButton);
+        root.addView(stopButton);
+        root.addView(resetButton);
+        root.addView(csvButton);
+        root.addView(processShockButton);
+        root.addView(historyButton);
+
+        // ===== V2.1 INDUSTRIAL DASHBOARD =====
+        final float den = getResources().getDisplayMetrics().density;
+        final int navy=Color.rgb(18,35,52), ink=Color.rgb(28,42,55), muted=Color.rgb(103,119,133);
+        final int green=Color.rgb(0,153,112), blue=Color.rgb(35,105,170), red=Color.rgb(205,68,72);
+        final int purple=Color.rgb(111,71,170), soft=Color.rgb(238,243,247);
+
+        root.removeAllViews();
+        root.setPadding((int)(12*den),(int)(12*den),(int)(12*den),(int)(70*den));
+        root.setBackgroundColor(Color.rgb(241,245,248));
+
+        android.graphics.drawable.GradientDrawable headerBg=new android.graphics.drawable.GradientDrawable();
+        headerBg.setColor(navy); headerBg.setCornerRadius(22*den);
+        header.setBackground(headerBg);
+        header.setPadding((int)(18*den),(int)(12*den),(int)(12*den),(int)(12*den));
+        title.setText("VIBRATION MONITOR"); title.setTextSize(20); title.setTextColor(Color.WHITE);
+        title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        logo.setBackgroundColor(Color.WHITE); logo.setPadding((int)(8*den),(int)(5*den),(int)(8*den),(int)(5*den));
+        LinearLayout.LayoutParams finalHeaderLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(100*den)); finalHeaderLp.setMargins(0,(int)(4*den),0,0); root.addView(header,finalHeaderLp);
+
+        TextView sub=new TextView(this);
+        sub.setText("REAL-TIME 3-AXIS CONDITION MONITORING"); sub.setTextSize(11); sub.setTextColor(muted);
+        sub.setLetterSpacing(0.08f); sub.setPadding((int)(4*den),(int)(10*den),0,(int)(8*den)); root.addView(sub);
+
+        LinearLayout statusPanel=new LinearLayout(this); statusPanel.setOrientation(LinearLayout.VERTICAL);
+        statusPanel.setPadding((int)(14*den),(int)(10*den),(int)(14*den),(int)(10*den));
+        android.graphics.drawable.GradientDrawable statusBg=new android.graphics.drawable.GradientDrawable();
+        statusBg.setColor(Color.WHITE); statusBg.setCornerRadius(18*den); statusBg.setStroke((int)(1*den),Color.rgb(220,228,234));
+        statusPanel.setBackground(statusBg);
+        TextView[] statuses={sensorStatus,locationText,cameraText,samplingText};
+        for(TextView st:statuses){st.setGravity(Gravity.START);st.setTextSize(13);st.setTextColor(muted);st.setPadding(0,(int)(2*den),0,(int)(3*den));}
+        sensorStatus.setTextColor(ink);
+        statusPanel.addView(sensorStatus);statusPanel.addView(locationText);statusPanel.addView(cameraText);statusPanel.addView(samplingText);
+        LinearLayout.LayoutParams statusLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT);
+        statusLp.setMargins(0,0,0,(int)(10*den));root.addView(statusPanel,statusLp);
+
+        LinearLayout buildingRow=new LinearLayout(this);buildingRow.setOrientation(LinearLayout.HORIZONTAL);buildingRow.setGravity(Gravity.CENTER_VERTICAL);
+        buildingLabel.setText("AREA");buildingLabel.setTextSize(12);buildingLabel.setTextColor(muted);buildingLabel.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        buildingLabel.setPadding((int)(4*den),0,(int)(12*den),0);buildingRow.addView(buildingLabel);
+        buildingRow.addView(buildingSpinner,new LinearLayout.LayoutParams(0,(int)(48*den),1f));root.addView(buildingRow);
+
+        LinearLayout graphCard=new LinearLayout(this);graphCard.setOrientation(LinearLayout.VERTICAL);
+        graphCard.setPadding((int)(10*den),(int)(10*den),(int)(10*den),(int)(8*den));
+        android.graphics.drawable.GradientDrawable graphBg=new android.graphics.drawable.GradientDrawable();
+        graphBg.setColor(Color.WHITE);graphBg.setCornerRadius(20*den);graphBg.setStroke((int)(1*den),Color.rgb(218,226,233));graphCard.setBackground(graphBg);
+        TextView graphTitle=new TextView(this);graphTitle.setText("LIVE VIBRATION");graphTitle.setTextSize(13);graphTitle.setTextColor(ink);
+        graphTitle.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);graphTitle.setPadding((int)(5*den),(int)(2*den),0,(int)(6*den));graphCard.addView(graphTitle);
+        graphCard.addView(graph,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(230*den)));
+        graphModes.setPadding(0,(int)(6*den),0,0);
+        for(int i=0;i<graphModes.getChildCount();i++){Button bm=(Button)graphModes.getChildAt(i);bm.setTextSize(11);bm.setTextColor(ink);bm.setAllCaps(false);bm.setMinHeight((int)(40*den));bm.setBackgroundTintList(android.content.res.ColorStateList.valueOf(soft));}
+        graphCard.addView(graphModes);
+        LinearLayout.LayoutParams graphLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT);
+        graphLp.setMargins(0,(int)(8*den),0,(int)(10*den));root.addView(graphCard,graphLp);
+
+        LinearLayout totalCard=new LinearLayout(this);totalCard.setOrientation(LinearLayout.VERTICAL);
+        totalCard.setPadding((int)(18*den),(int)(12*den),(int)(18*den),(int)(12*den));
+        android.graphics.drawable.GradientDrawable totalBg=new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,new int[]{Color.rgb(27,52,72),Color.rgb(37,83,105)});
+        totalBg.setCornerRadius(20*den);totalCard.setBackground(totalBg);
+        TextView totalLabel=new TextView(this);totalLabel.setText("TOTAL VIBRATION");totalLabel.setTextSize(12);totalLabel.setTextColor(Color.rgb(190,211,223));totalLabel.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);totalCard.addView(totalLabel);
+        currentText.setTextSize(27);currentText.setTextColor(Color.WHITE);currentText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);currentText.setPadding(0,(int)(2*den),0,(int)(2*den));totalCard.addView(currentText);
+        LinearLayout totalStats=new LinearLayout(this);totalStats.setOrientation(LinearLayout.HORIZONTAL);
+        TextView[] ts={avgText,maxText,minText};for(TextView tv:ts){tv.setTextSize(12);tv.setTextColor(Color.rgb(220,232,239));tv.setGravity(Gravity.CENTER);tv.setPadding((int)(2*den),(int)(5*den),(int)(2*den),(int)(5*den));totalStats.addView(tv,new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f));}
+        totalCard.addView(totalStats);root.addView(totalCard);
+
+        LinearLayout axisCard=new LinearLayout(this);axisCard.setOrientation(LinearLayout.VERTICAL);axisCard.setPadding((int)(14*den),(int)(12*den),(int)(14*den),(int)(12*den));
+        android.graphics.drawable.GradientDrawable axisBg=new android.graphics.drawable.GradientDrawable();axisBg.setColor(Color.WHITE);axisBg.setCornerRadius(20*den);axisBg.setStroke((int)(1*den),Color.rgb(218,226,233));axisCard.setBackground(axisBg);
+        axisSummaryText.setTextSize(14); axisSummaryText.setTypeface(android.graphics.Typeface.MONOSPACE);axisSummaryText.setTextColor(ink);axisSummaryText.setTypeface(android.graphics.Typeface.MONOSPACE);axisSummaryText.setPadding(0,0,0,(int)(5*den));
+        directionText.setTextSize(15);directionText.setTextColor(purple);directionText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);directionText.setGravity(Gravity.CENTER);
+        axisCard.addView(axisSummaryText);axisCard.addView(directionText);
         LinearLayout.LayoutParams axisLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT);axisLp.setMargins(0,(int)(10*den),0,(int)(10*den));root.addView(axisCard,axisLp);
 
         LinearLayout specCard=new LinearLayout(this);specCard.setOrientation(LinearLayout.VERTICAL);specCard.setPadding((int)(14*den),(int)(10*den),(int)(14*den),(int)(12*den));
@@ -354,21 +681,8 @@ public class MainActivity extends Activity implements SensorEventListener {
         specCard.addView(thresholdLabel);LinearLayout specRow=new LinearLayout(this);specRow.setOrientation(LinearLayout.HORIZONTAL);specRow.setGravity(Gravity.CENTER_VERTICAL);
         specRow.addView(thresholdInput,new LinearLayout.LayoutParams(0,(int)(50*den),1f));LinearLayout.LayoutParams applyLp=new LinearLayout.LayoutParams((int)(125*den),(int)(50*den));applyLp.setMargins((int)(8*den),0,0,0);specRow.addView(specSaveButton,applyLp);specCard.addView(specRow);root.addView(specCard);
 
-        alarmText.setTextSize(20);
-        alarmText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        alarmText.setGravity(Gravity.CENTER);
-        alarmText.setPadding((int)(12*den),(int)(12*den),(int)(12*den),(int)(12*den));
-        LinearLayout.LayoutParams alarmLp=new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        );
-        alarmLp.setMargins(0,(int)(10*den),0,(int)(4*den));
-        root.addView(alarmText,alarmLp);
-
-        eventText.setTextSize(13);
-        eventText.setTextColor(muted);
-        eventText.setGravity(Gravity.CENTER);
-        root.addView(eventText);
+        alarmText.setTextSize(17);alarmText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);alarmText.setGravity(Gravity.CENTER);
+        eventText.setTextSize(13);eventText.setTextColor(muted);root.addView(alarmText);root.addView(eventText);
 
         LinearLayout row1=new LinearLayout(this);row1.setOrientation(LinearLayout.HORIZONTAL);LinearLayout row2=new LinearLayout(this);row2.setOrientation(LinearLayout.HORIZONTAL);
         Button[] mains={startButton,stopButton,resetButton,csvButton,processShockButton,historyButton};for(Button mb:mains){mb.setTextColor(Color.WHITE);mb.setTextSize(14);mb.setAllCaps(false);mb.setMinHeight((int)(52*den));}
@@ -1137,7 +1451,8 @@ public class MainActivity extends Activity implements SensorEventListener {
                 SensorManager.SENSOR_DELAY_GAME
         );
 
-        updateDashboardStatus(0.0, getThreshold());
+        alarmText.setText("상태 : 측정 중");
+        alarmText.setTextColor(Color.rgb(0, 130, 0));
     }
 
     private void stopMeasurement() {
@@ -1146,7 +1461,8 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         sensorManager.unregisterListener(this);
 
-        updateDashboardStatus(0.0, getThreshold());
+        alarmText.setText("상태 : 정지");
+        alarmText.setTextColor(Color.DKGRAY);
     }
 
     private void resetValues() {
@@ -1173,15 +1489,15 @@ public class MainActivity extends Activity implements SensorEventListener {
         );
 
         avgText.setText(
-                "평균  0.000"
+                "평균값 : 0.000 m/s²"
         );
 
         maxText.setText(
-                "최대  0.000"
+                "최대값 : 0.000 m/s²"
         );
 
         minText.setText(
-                "최소  0.000"
+                "최소값 : 0.000 m/s²"
         );
 
         alarmText.setText("상태 : 정상");
@@ -1190,8 +1506,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         eventText.setText(
                 "이벤트 : 0회\n최근 3초 데이터 대기 중"
         );
-            updateDashboardStatus(0.0, getThreshold());
-}
+    }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
@@ -1306,7 +1621,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         avgText.setText(
                 String.format(
                         Locale.US,
-                        "평균  %.3f",
+                        "평균값 : %.3f m/s²",
                         average
                 )
         );
@@ -1314,7 +1629,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         maxText.setText(
                 String.format(
                         Locale.US,
-                        "최대  %.3f",
+                        "최대값 : %.3f m/s²",
                         maxValue
                 )
         );
@@ -1322,7 +1637,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         minText.setText(
                 String.format(
                         Locale.US,
-                        "최소  %.3f",
+                        "최소값 : %.3f m/s²",
                         minValue
                 )
         );
@@ -1619,10 +1934,7 @@ public class MainActivity extends Activity implements SensorEventListener {
                 );
             }
         }
-    
-        // 현재값 기준으로 상태 카드를 최종 갱신
-        updateDashboardStatus(vibration, threshold);
-}
+    }
 
 
     private java.io.File createTelegramEventGraph(java.io.File csvFile, java.util.ArrayList<DataPoint> data) {
@@ -1800,98 +2112,6 @@ public class MainActivity extends Activity implements SensorEventListener {
                     "사용 가능한 이메일 앱을 찾지 못했습니다.",
                     android.widget.Toast.LENGTH_LONG
             ).show();
-        }
-    }
-
-
-    // ===== V3 STATUS + SPEC ZONE =====
-    private void setDashboardStatusCard(
-            String topLine,
-            String bottomLine,
-            int backgroundColor,
-            int textColor,
-            int strokeColor
-    ) {
-        if (alarmText == null) return;
-
-        float d = getResources().getDisplayMetrics().density;
-
-        android.graphics.drawable.GradientDrawable bg =
-                new android.graphics.drawable.GradientDrawable();
-
-        bg.setColor(backgroundColor);
-        bg.setCornerRadius(16f * d);
-        bg.setStroke(Math.max(1, (int)(1f * d)), strokeColor);
-
-        alarmText.setBackground(bg);
-        alarmText.setTextColor(textColor);
-        alarmText.setText(topLine + "\n" + bottomLine);
-        alarmText.setGravity(Gravity.CENTER);
-        alarmText.setPadding(
-                (int)(12*d),
-                (int)(11*d),
-                (int)(12*d),
-                (int)(11*d)
-        );
-    }
-
-    private void updateDashboardStatus(
-            double vibration,
-            double threshold
-    ) {
-        if (!measuring) {
-            setDashboardStatusCard(
-                    "■ STOPPED",
-                    "상태 : 측정 정지",
-                    Color.rgb(239,243,246),
-                    Color.rgb(86,101,113),
-                    Color.rgb(207,216,223)
-            );
-            return;
-        }
-
-        double safeThreshold = threshold > 0.0 ? threshold : 2.0;
-        double ratio = vibration / safeThreshold;
-        double percent = Math.max(0.0, ratio * 100.0);
-
-        if (ratio >= 1.0) {
-            setDashboardStatusCard(
-                    "● MEASURING",
-                    String.format(
-                            Locale.US,
-                            "상태 : NG / SPEC 초과  %.0f%%",
-                            percent
-                    ),
-                    Color.rgb(255,235,235),
-                    Color.rgb(190,45,50),
-                    Color.rgb(224,104,109)
-            );
-
-        } else if (ratio >= 0.90) {
-            setDashboardStatusCard(
-                    "● MEASURING",
-                    String.format(
-                            Locale.US,
-                            "상태 : 주의 / SPEC 접근  %.0f%%",
-                            percent
-                    ),
-                    Color.rgb(255,247,226),
-                    Color.rgb(184,112,0),
-                    Color.rgb(235,180,74)
-            );
-
-        } else {
-            setDashboardStatusCard(
-                    "● MEASURING",
-                    String.format(
-                            Locale.US,
-                            "상태 : 정상  ·  SPEC %.0f%%",
-                            percent
-                    ),
-                    Color.rgb(231,248,240),
-                    Color.rgb(0,125,86),
-                    Color.rgb(76,181,139)
-            );
         }
     }
 

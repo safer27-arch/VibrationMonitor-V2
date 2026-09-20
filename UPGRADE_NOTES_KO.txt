@@ -1,0 +1,20 @@
+VibrationMonitor XYZ Upgrade v2
+
+포함 기능
+- X/Y/Z/TOTAL 실시간 진동 측정
+- X/Y/Z/TOTAL CURRENT/AVG/MAX/MIN 요약
+- 주 진동 방향 표시
+- 실측 Sampling Hz 표시
+- 그래프 ALL/X/Y/Z/TOTAL 선택
+- 이벤트 CSV: X,Y,Z,TOTAL 저장
+- Telegram 이벤트: X/Y/Z MAX, TOTAL, 주 진동방향, Sampling Hz
+- Telegram Chat ID 여러 개 입력 지원 (쉼표/공백/줄바꿈 구분)
+- 건물 선택: WA3, WA5, WA6, WA7, WA5+6+7, WA8, WA9, WA8+9
+- 기존 WA5 GPS 지도 유지
+- WA3/6/7/8/9는 좌표 입력 전까지 선택/개략도 구조 제공
+- LG Energy Solution 로고 메인 상단 우측 배치
+- 산업용 대시보드 스타일 UI
+
+주의
+- WA3/6/7/8/9 실제 GPS 건물 경계는 각 건물 좌표를 받은 뒤 정밀 지도에 반영합니다.
+- 기존 WA5 좌표/기능은 원본 프로젝트 값을 유지했습니다.

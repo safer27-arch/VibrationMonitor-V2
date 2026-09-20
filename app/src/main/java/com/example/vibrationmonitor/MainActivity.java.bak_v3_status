@@ -354,21 +354,8 @@ public class MainActivity extends Activity implements SensorEventListener {
         specCard.addView(thresholdLabel);LinearLayout specRow=new LinearLayout(this);specRow.setOrientation(LinearLayout.HORIZONTAL);specRow.setGravity(Gravity.CENTER_VERTICAL);
         specRow.addView(thresholdInput,new LinearLayout.LayoutParams(0,(int)(50*den),1f));LinearLayout.LayoutParams applyLp=new LinearLayout.LayoutParams((int)(125*den),(int)(50*den));applyLp.setMargins((int)(8*den),0,0,0);specRow.addView(specSaveButton,applyLp);specCard.addView(specRow);root.addView(specCard);
 
-        alarmText.setTextSize(20);
-        alarmText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        alarmText.setGravity(Gravity.CENTER);
-        alarmText.setPadding((int)(12*den),(int)(12*den),(int)(12*den),(int)(12*den));
-        LinearLayout.LayoutParams alarmLp=new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        );
-        alarmLp.setMargins(0,(int)(10*den),0,(int)(4*den));
-        root.addView(alarmText,alarmLp);
-
-        eventText.setTextSize(13);
-        eventText.setTextColor(muted);
-        eventText.setGravity(Gravity.CENTER);
-        root.addView(eventText);
+        alarmText.setTextSize(17);alarmText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);alarmText.setGravity(Gravity.CENTER);
+        eventText.setTextSize(13);eventText.setTextColor(muted);root.addView(alarmText);root.addView(eventText);
 
         LinearLayout row1=new LinearLayout(this);row1.setOrientation(LinearLayout.HORIZONTAL);LinearLayout row2=new LinearLayout(this);row2.setOrientation(LinearLayout.HORIZONTAL);
         Button[] mains={startButton,stopButton,resetButton,csvButton,processShockButton,historyButton};for(Button mb:mains){mb.setTextColor(Color.WHITE);mb.setTextSize(14);mb.setAllCaps(false);mb.setMinHeight((int)(52*den));}
@@ -1137,7 +1124,8 @@ public class MainActivity extends Activity implements SensorEventListener {
                 SensorManager.SENSOR_DELAY_GAME
         );
 
-        updateDashboardStatus(0.0, getThreshold());
+        alarmText.setText("상태 : 측정 중");
+        alarmText.setTextColor(Color.rgb(0, 130, 0));
     }
 
     private void stopMeasurement() {
@@ -1146,7 +1134,8 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         sensorManager.unregisterListener(this);
 
-        updateDashboardStatus(0.0, getThreshold());
+        alarmText.setText("상태 : 정지");
+        alarmText.setTextColor(Color.DKGRAY);
     }
 
     private void resetValues() {
@@ -1190,8 +1179,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         eventText.setText(
                 "이벤트 : 0회\n최근 3초 데이터 대기 중"
         );
-            updateDashboardStatus(0.0, getThreshold());
-}
+    }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
@@ -1619,10 +1607,7 @@ public class MainActivity extends Activity implements SensorEventListener {
                 );
             }
         }
-    
-        // 현재값 기준으로 상태 카드를 최종 갱신
-        updateDashboardStatus(vibration, threshold);
-}
+    }
 
 
     private java.io.File createTelegramEventGraph(java.io.File csvFile, java.util.ArrayList<DataPoint> data) {
@@ -1800,98 +1785,6 @@ public class MainActivity extends Activity implements SensorEventListener {
                     "사용 가능한 이메일 앱을 찾지 못했습니다.",
                     android.widget.Toast.LENGTH_LONG
             ).show();
-        }
-    }
-
-
-    // ===== V3 STATUS + SPEC ZONE =====
-    private void setDashboardStatusCard(
-            String topLine,
-            String bottomLine,
-            int backgroundColor,
-            int textColor,
-            int strokeColor
-    ) {
-        if (alarmText == null) return;
-
-        float d = getResources().getDisplayMetrics().density;
-
-        android.graphics.drawable.GradientDrawable bg =
-                new android.graphics.drawable.GradientDrawable();
-
-        bg.setColor(backgroundColor);
-        bg.setCornerRadius(16f * d);
-        bg.setStroke(Math.max(1, (int)(1f * d)), strokeColor);
-
-        alarmText.setBackground(bg);
-        alarmText.setTextColor(textColor);
-        alarmText.setText(topLine + "\n" + bottomLine);
-        alarmText.setGravity(Gravity.CENTER);
-        alarmText.setPadding(
-                (int)(12*d),
-                (int)(11*d),
-                (int)(12*d),
-                (int)(11*d)
-        );
-    }
-
-    private void updateDashboardStatus(
-            double vibration,
-            double threshold
-    ) {
-        if (!measuring) {
-            setDashboardStatusCard(
-                    "■ STOPPED",
-                    "상태 : 측정 정지",
-                    Color.rgb(239,243,246),
-                    Color.rgb(86,101,113),
-                    Color.rgb(207,216,223)
-            );
-            return;
-        }
-
-        double safeThreshold = threshold > 0.0 ? threshold : 2.0;
-        double ratio = vibration / safeThreshold;
-        double percent = Math.max(0.0, ratio * 100.0);
-
-        if (ratio >= 1.0) {
-            setDashboardStatusCard(
-                    "● MEASURING",
-                    String.format(
-                            Locale.US,
-                            "상태 : NG / SPEC 초과  %.0f%%",
-                            percent
-                    ),
-                    Color.rgb(255,235,235),
-                    Color.rgb(190,45,50),
-                    Color.rgb(224,104,109)
-            );
-
-        } else if (ratio >= 0.90) {
-            setDashboardStatusCard(
-                    "● MEASURING",
-                    String.format(
-                            Locale.US,
-                            "상태 : 주의 / SPEC 접근  %.0f%%",
-                            percent
-                    ),
-                    Color.rgb(255,247,226),
-                    Color.rgb(184,112,0),
-                    Color.rgb(235,180,74)
-            );
-
-        } else {
-            setDashboardStatusCard(
-                    "● MEASURING",
-                    String.format(
-                            Locale.US,
-                            "상태 : 정상  ·  SPEC %.0f%%",
-                            percent
-                    ),
-                    Color.rgb(231,248,240),
-                    Color.rgb(0,125,86),
-                    Color.rgb(76,181,139)
-            );
         }
     }
 

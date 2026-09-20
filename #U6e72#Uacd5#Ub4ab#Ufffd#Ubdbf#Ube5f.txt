@@ -1,0 +1,8 @@
+Vibration Monitor v1
+- 센서: Accelerometer
+- 진동값: 중력 저역통과 추정값을 제거한 선형 가속도 벡터 크기 / 9.80665
+- 기본 SPEC: 0.50 g
+- PRE buffer: 3초
+- POST buffer: 3초
+- GPS: 위치 권한 허용 시 기록
+- 이벤트 파일: CSV
