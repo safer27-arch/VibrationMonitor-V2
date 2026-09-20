@@ -1224,8 +1224,17 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             TextView chartTitle = tv("EVENT PEAK COMPARISON", 13, Color.rgb(15, 38, 61));
             chartTitle.setTypeface(null, 1);
             box.addView(chartTitle);
-            box.addView(new SessionBarsView(this, sessionEvents),
-                    new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(220)));
+            int eventChartHeight = Math.max(
+                    92,
+                    Math.min(245, sessionEvents.size() * 58 + 28)
+            );
+            box.addView(
+                    new SessionBarsView(this, sessionEvents),
+                    new LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            dp(eventChartHeight)
+                    )
+            );
         }
 
         if (!unitSegments.isEmpty()) {
@@ -1233,16 +1242,30 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             TextView unitTitle = tv("UNIT SUMMARY · PEAK / RMS / IMPACT / TIME", 13, Color.rgb(15, 38, 61));
             unitTitle.setTypeface(null, 1);
             box.addView(unitTitle);
+            int unitChartHeight = Math.max(
+                    98,
+                    Math.min(360, aggregates.size() * 72 + 24)
+            );
             box.addView(
                     new UnitSummaryView(this, aggregates),
                     new LinearLayout.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
-                            dp(Math.max(190, aggregates.size() * 82))
+                            dp(unitChartHeight)
                     )
             );
         }
 
+        TextView scrollHint = tv(
+                "↑ ↓  스크롤하여 전체 Unit 비교",
+                11,
+                Color.rgb(120, 130, 140)
+        );
+        scrollHint.setGravity(Gravity.CENTER);
+        scrollHint.setPadding(dp(4), dp(8), dp(4), dp(4));
+        box.addView(scrollHint);
+
         ScrollView sv = new ScrollView(this);
+        sv.setFillViewport(false);
         sv.addView(box);
 
         new android.app.AlertDialog.Builder(this)
@@ -1769,8 +1792,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             super.onDraw(c);
             if (data.isEmpty()) return;
 
-            float left = 18f;
-            float right = getWidth() - 18f;
+            float left = 14f;
+            float right = getWidth() - 14f;
             float row = getHeight() / (float) data.size();
 
             double max = 1.0;
@@ -1778,13 +1801,13 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
             for (int i = 0; i < data.size(); i++) {
                 UnitAggregate a = data.get(i);
-                float y = i * row + 22f;
+                float y = i * row + 19f;
 
                 p.setColor(Color.DKGRAY);
-                p.setTextSize(22f);
+                p.setTextSize(18f);
                 c.drawText(a.label, left, y, p);
 
-                p.setTextSize(19f);
+                p.setTextSize(15f);
                 c.drawText(
                         String.format(
                                 Locale.US,
@@ -1799,8 +1822,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                         p
                 );
 
-                float barTop = y + 34f;
-                float barBottom = Math.min(getHeight() - 3f, barTop + 12f);
+                float barTop = y + 30f;
+                float barBottom = Math.min(getHeight() - 3f, barTop + 10f);
                 float barWidth = (float) ((right - left) * a.maxPeak / max);
 
                 p.setColor(Color.rgb(35, 105, 170));
@@ -1844,19 +1867,19 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             double max = 1.0;
             for (EventRecord r : data) max = Math.max(max, r.peak);
 
-            p.setTextSize(24f);
+            p.setTextSize(19f);
             p.setColor(Color.DKGRAY);
 
             for (int i = 0; i < data.size(); i++) {
                 EventRecord r = data.get(i);
                 float y = top + i * row;
-                float labelY = y + 24f;
+                float labelY = y + 19f;
 
                 String label = "#" + r.no + " " + r.process + " / " + r.unit;
                 c.drawText(label, left, labelY, p);
 
-                float barTop = y + 31f;
-                float barBottom = Math.min(getHeight() - 4f, barTop + 16f);
+                float barTop = y + 25f;
+                float barBottom = Math.min(getHeight() - 4f, barTop + 12f);
                 float barWidth = (float) ((right - left) * r.peak / max);
 
                 p.setColor(Color.rgb(110, 75, 190));
