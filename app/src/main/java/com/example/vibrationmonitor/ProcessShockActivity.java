@@ -65,6 +65,12 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     private long eventStart = 0L;
     private long lastAbove = 0L;
     private long lastClosed = 0L;
+    private long eventCoreEnd = 0L;
+    private boolean eventCoreClosed = false;
+
+    private static final long IMPACT_QUIET_MS = 600L;
+    private static final long IMPACT_POST_MS = 3000L;
+    private static final double IMPACT_RELEASE_FACTOR = 0.65;
 
     private int impactCount = 0;
     private int thresholdCandidateCount = 0;
@@ -168,7 +174,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         h.addView(cam);
         root.addView(h);
 
-        TextView bb = tv("PRE 3s + IMPACT + POST 3s · PHOTO · GRAPH · CSV · TELEGRAM", 11, Color.rgb(70, 90, 105));
+        TextView bb = tv("SMART SPLIT 0.6s · PRE 3s + IMPACT CORE + POST 3s · PHOTO · GRAPH · CSV", 10, Color.rgb(70, 90, 105));
         bb.setGravity(Gravity.CENTER);
         bb.setPadding(dp(4), dp(4), dp(4), dp(5));
         root.addView(bb);
@@ -1127,12 +1133,26 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 event.add(p);
             }
 
-            if (t >= spec * 0.8) {
-                lastAbove = now;
-            }
+            if (!eventCoreClosed) {
+                if (t >= spec * IMPACT_RELEASE_FACTOR) {
+                    lastAbove = now;
+                }
 
-            if (now - lastAbove >= 3000L) {
-                finishEvent();
+                if (now - lastAbove >= IMPACT_QUIET_MS) {
+                    eventCoreClosed = true;
+                    eventCoreEnd = lastAbove;
+
+                    status.setText(
+                            "● IMPACT #"
+                                    + impactCount
+                                    + " CORE CLOSED · POST 3s"
+                    );
+                    status.setTextColor(Color.rgb(255, 185, 70));
+                }
+            } else {
+                if (now - eventCoreEnd >= IMPACT_POST_MS) {
+                    finishEvent();
+                }
             }
         }
 
@@ -1295,6 +1315,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         eventOn = false;
         event.clear();
+        eventCoreClosed = false;
+        eventCoreEnd = 0L;
         lastClosed = SystemClock.elapsedRealtime();
 
         final Stats st = stats(d, es, la);
@@ -1344,16 +1366,39 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     private Stats stats(ArrayList<P> d, long es, long la) {
         Stats s = new Stats();
         double q = 0.0;
+        long coreCount = 0L;
 
         for (P p : d) {
+            if (p.mono < es || p.mono > la) {
+                continue;
+            }
+
             s.pk = Math.max(s.pk, p.t);
             q += p.t * p.t;
             s.mx = Math.max(s.mx, Math.abs(p.x));
             s.my = Math.max(s.my, Math.abs(p.y));
             s.mz = Math.max(s.mz, Math.abs(p.z));
+            coreCount++;
         }
 
-        s.rms = d.isEmpty() ? 0.0 : Math.sqrt(q / d.size());
+        if (coreCount == 0L && !d.isEmpty()) {
+            P best = d.get(d.size() - 1);
+
+            for (P p : d) {
+                if (Math.abs(p.mono - es) < Math.abs(best.mono - es)) {
+                    best = p;
+                }
+            }
+
+            s.pk = best.t;
+            q = best.t * best.t;
+            s.mx = Math.abs(best.x);
+            s.my = Math.abs(best.y);
+            s.mz = Math.abs(best.z);
+            coreCount = 1L;
+        }
+
+        s.rms = coreCount == 0L ? 0.0 : Math.sqrt(q / coreCount);
         s.dur = Math.max(0.0, (la - es) / 1000.0);
         s.axis = s.mx >= s.my && s.mx >= s.mz ? "X" : (s.my >= s.mz ? "Y" : "Z");
         return s;
@@ -1490,14 +1535,21 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             o.println("Unit / Action : " + uu);
             o.println(String.format(
                     Locale.US,
-                    "Peak : %.3f m/s²\nRMS : %.3f m/s²\nImpact Duration : %.2f sec\n"
+                    "Peak (CORE) : %.3f m/s²\nRMS (CORE) : %.3f m/s²\nImpact Duration (CORE) : %.2f sec\n"
                             + "Main Direction : %s AXIS\nX / Y / Z Peak : %.3f / %.3f / %.3f m/s²\nSPEC : %.3f m/s²",
                     s.pk, s.rms, s.dur, s.axis, s.mx, s.my, s.mz, spec
             ));
             o.println("Photo : " + (ph == null ? "-" : ph.getName()));
             o.println("Graph : " + png.getName());
             o.println("CSV : " + csv.getName());
-            o.println("Window : PRE 3 sec + IMPACT + POST 3 sec");
+            o.println("Window : PRE 3 sec + IMPACT CORE + POST 3 sec");
+            o.println(
+                    "Detection : release "
+                            + String.format(Locale.US, "%.0f", IMPACT_RELEASE_FACTOR * 100.0)
+                            + "% SPEC / quiet "
+                            + String.format(Locale.US, "%.2f", IMPACT_QUIET_MS / 1000.0)
+                            + " sec"
+            );
         } catch (Exception ignored) {}
     }
 
