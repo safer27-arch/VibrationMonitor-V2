@@ -15,12 +15,24 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     private Sensor acc;
 
     private TextView status, cam, elapsed, total, peak, rms, impact, dir, last;
-    private Spinner process, unit;
+    private Spinner process, unit, mode;
     private EditText lineInput, equipmentInput;
     private ShockGraph graph;
     private ImpactTimelineView timeline;
-    private TextView segmentInfo;
+    private TextView segmentInfo, processClock;
+    private Button recipeButton, pauseButton;
     private long lastCheckpointMs = 0L;
+
+    private final ArrayList<RecipeUnit> recipe = new ArrayList<>();
+    private boolean processPaused = false;
+    private long processPauseStartMs = 0L;
+    private long totalProcessPausedMs = 0L;
+    private long segmentProcessStartMs = 0L;
+    private long eventProcessOffsetSec = 0L;
+
+    private java.io.BufferedWriter continuousWriter = null;
+    private java.io.File continuousFile = null;
+    private int continuousSinceFlush = 0;
 
     private final ArrayList<UnitSegment> unitSegments = new ArrayList<>();
     private long segmentStartMs = 0L;
@@ -176,6 +188,26 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         ));
         root.addView(process);
 
+        root.addView(tv("ANALYSIS MODE", 12, Color.DKGRAY));
+        LinearLayout modeRow = new LinearLayout(this);
+        modeRow.setOrientation(LinearLayout.HORIZONTAL);
+        modeRow.setGravity(Gravity.CENTER_VERTICAL);
+
+        mode = new Spinner(this);
+        mode.setAdapter(new ArrayAdapter<String>(
+                this,
+                android.R.layout.simple_spinner_dropdown_item,
+                new String[]{"AUTO TIMELINE", "MANUAL UNIT"}
+        ));
+        modeRow.addView(mode, new LinearLayout.LayoutParams(0, dp(44), 1f));
+
+        recipeButton = btn("RECIPE", Color.rgb(67, 88, 108));
+        LinearLayout.LayoutParams recipeLp =
+                new LinearLayout.LayoutParams(dp(105), dp(42));
+        recipeLp.setMargins(dp(6), 0, 0, 0);
+        modeRow.addView(recipeButton, recipeLp);
+        root.addView(modeRow);
+
         root.addView(tv("UNIT / ACTION", 13, Color.DKGRAY));
         unit = new Spinner(this);
         root.addView(unit);
@@ -190,15 +222,52 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         segmentInfo.setPadding(dp(10), dp(7), dp(10), dp(7));
         root.addView(segmentInfo);
 
+        LinearLayout clockRow = new LinearLayout(this);
+        clockRow.setOrientation(LinearLayout.HORIZONTAL);
+        clockRow.setGravity(Gravity.CENTER_VERTICAL);
+
+        processClock = tv(
+                "REAL 00:00 · PROCESS 00:00 · READY",
+                11,
+                Color.rgb(55, 75, 92)
+        );
+        processClock.setBackground(bg(Color.WHITE, 10));
+        clockRow.addView(processClock, new LinearLayout.LayoutParams(0, dp(46), 1f));
+
+        pauseButton = btn("PROCESS PAUSE", Color.rgb(230, 150, 45));
+        LinearLayout.LayoutParams pauseLp =
+                new LinearLayout.LayoutParams(dp(130), dp(44));
+        pauseLp.setMargins(dp(6), 0, 0, 0);
+        clockRow.addView(pauseButton, pauseLp);
+        root.addView(clockRow);
+
         process.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(android.widget.AdapterView<?> p, View v, int pos, long id) {
                 units(pos);
+                loadRecipeForProcess();
+                updateModeUi();
             }
 
             @Override
             public void onNothingSelected(android.widget.AdapterView<?> p) {}
         });
+
+        mode.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> p, View v, int pos, long id) {
+                updateModeUi();
+            }
+
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> p) {}
+        });
+
+        recipeButton.setOnClickListener(v -> showRecipeDialog());
+        pauseButton.setOnClickListener(v -> toggleProcessPause());
+
+        loadRecipeForProcess();
+        updateModeUi();
 
         LinearLayout live = new LinearLayout(this);
         live.setOrientation(LinearLayout.VERTICAL);
@@ -350,6 +419,338 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         }
     }
 
+    private boolean isAutoMode() {
+        return mode != null && mode.getSelectedItemPosition() == 0;
+    }
+
+    private String recipeKey() {
+        String p = process == null || process.getSelectedItem() == null
+                ? "STACK"
+                : String.valueOf(process.getSelectedItem());
+        return "recipe_" + p;
+    }
+
+    private String defaultRecipeText() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 1; i <= 10; i++) {
+            if (i > 1) sb.append("\n");
+            sb.append("U").append(i).append(",10");
+        }
+        return sb.toString();
+    }
+
+    private String recipeToText() {
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < recipe.size(); i++) {
+            if (i > 0) sb.append("\n");
+            RecipeUnit r = recipe.get(i);
+            sb.append(r.name)
+                    .append(",")
+                    .append(String.format(Locale.US, "%.1f", r.seconds));
+        }
+
+        return sb.toString();
+    }
+
+    private ArrayList<RecipeUnit> parseRecipe(String text) {
+        ArrayList<RecipeUnit> out = new ArrayList<>();
+        if (text == null) return out;
+
+        String[] lines = text.split("\\r?\\n");
+
+        for (String raw : lines) {
+            String line = raw.trim();
+            if (line.isEmpty()) continue;
+
+            String[] p = line.split(",");
+            if (p.length < 2) continue;
+
+            String name = p[0].trim();
+
+            try {
+                double sec = Double.parseDouble(p[1].trim());
+
+                if (!name.isEmpty() && sec > 0.05) {
+                    RecipeUnit r = new RecipeUnit();
+                    r.name = name;
+                    r.seconds = sec;
+                    out.add(r);
+                }
+            } catch (Exception ignored) {}
+        }
+
+        return out;
+    }
+
+    private void loadRecipeForProcess() {
+        if (process == null) return;
+
+        String text = getSharedPreferences("ShockRecipe", MODE_PRIVATE)
+                .getString(recipeKey(), defaultRecipeText());
+
+        ArrayList<RecipeUnit> parsed = parseRecipe(text);
+
+        recipe.clear();
+
+        if (parsed.isEmpty()) {
+            parsed = parseRecipe(defaultRecipeText());
+        }
+
+        recipe.addAll(parsed);
+    }
+
+    private void showRecipeDialog() {
+        if (running) {
+            Toast.makeText(
+                    this,
+                    "측정 중에는 Recipe를 변경할 수 없습니다.",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
+        final EditText e = new EditText(this);
+        e.setText(recipeToText());
+        e.setTextSize(14);
+        e.setMinLines(10);
+        e.setGravity(Gravity.TOP | Gravity.START);
+        e.setInputType(
+                android.text.InputType.TYPE_CLASS_TEXT
+                        | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+        );
+
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("AUTO TIMELINE RECIPE")
+                .setMessage(
+                        "한 줄에 Unit 이름, 기준시간(초)\n"
+                                + "예: Loader,8.5\nTransfer,10\nPress,12\n\n"
+                                + "설비가 멈추면 PROCESS PAUSE를 누르면\n"
+                                + "진동 측정은 계속하고 공정시간만 멈춥니다."
+                )
+                .setView(e)
+                .setPositiveButton("저장", (d, w) -> {
+                    ArrayList<RecipeUnit> parsed =
+                            parseRecipe(e.getText().toString());
+
+                    if (parsed.isEmpty()) {
+                        Toast.makeText(
+                                this,
+                                "Recipe 형식을 확인해주세요.",
+                                Toast.LENGTH_LONG
+                        ).show();
+                        return;
+                    }
+
+                    recipe.clear();
+                    recipe.addAll(parsed);
+
+                    getSharedPreferences("ShockRecipe", MODE_PRIVATE)
+                            .edit()
+                            .putString(recipeKey(), recipeToText())
+                            .apply();
+
+                    Toast.makeText(
+                            this,
+                            "Recipe " + recipe.size() + "개 Unit 저장 완료",
+                            Toast.LENGTH_SHORT
+                    ).show();
+
+                    updateModeUi();
+                })
+                .setNegativeButton("취소", null)
+                .show();
+    }
+
+    private double recipeTotalSec() {
+        double total = 0.0;
+        for (RecipeUnit r : recipe) total += r.seconds;
+        return total;
+    }
+
+    private long getProcessElapsedMs(long now) {
+        if (startMs <= 0L) return 0L;
+
+        long paused = totalProcessPausedMs;
+
+        if (processPaused && processPauseStartMs > 0L) {
+            paused += Math.max(0L, now - processPauseStartMs);
+        }
+
+        return Math.max(0L, now - startMs - paused);
+    }
+
+    private int activeRecipeIndex(long processMs) {
+        if (recipe.isEmpty()) return -1;
+
+        double sec = processMs / 1000.0;
+        double end = 0.0;
+
+        for (int i = 0; i < recipe.size(); i++) {
+            end += recipe.get(i).seconds;
+            if (sec < end) return i;
+        }
+
+        return -1;
+    }
+
+    private String currentTaggedUnit(long now) {
+        if (!isAutoMode()) {
+            return String.valueOf(unit.getSelectedItem());
+        }
+
+        if (processPaused) {
+            return "LINE STOP";
+        }
+
+        int idx = activeRecipeIndex(getProcessElapsedMs(now));
+
+        if (idx >= 0 && idx < recipe.size()) {
+            return recipe.get(idx).name;
+        }
+
+        return "AFTER RECIPE";
+    }
+
+    private void updateModeUi() {
+        if (mode == null
+                || unit == null
+                || recipeButton == null
+                || pauseButton == null
+                || segmentInfo == null) {
+            return;
+        }
+
+        boolean auto = isAutoMode();
+
+        unit.setEnabled(!auto);
+        recipeButton.setEnabled(!running && auto);
+        pauseButton.setEnabled(running && auto && !calibrating);
+
+        if (!running) {
+            pauseButton.setText("PROCESS PAUSE");
+
+            segmentInfo.setText(
+                    auto
+                            ? "AUTO TIMELINE · "
+                                + recipe.size()
+                                + " Units · "
+                                + String.format(Locale.US, "%.1fs", recipeTotalSec())
+                            : "MANUAL UNIT · READY"
+            );
+        }
+    }
+
+    private void toggleProcessPause() {
+        if (!running || !isAutoMode() || calibrating) return;
+
+        long now = SystemClock.elapsedRealtime();
+
+        if (!processPaused) {
+            processPaused = true;
+            processPauseStartMs = now;
+            pauseButton.setText("PROCESS RESUME");
+            status.setText("● LINE STOP / PROCESS TIME PAUSED");
+            status.setTextColor(Color.rgb(255, 185, 70));
+        } else {
+            totalProcessPausedMs += Math.max(0L, now - processPauseStartMs);
+            processPauseStartMs = 0L;
+            processPaused = false;
+            pauseButton.setText("PROCESS PAUSE");
+            status.setText("● MONITORING · AUTO TIMELINE");
+            status.setTextColor(Color.rgb(80, 220, 150));
+        }
+    }
+
+    private void openContinuousCsv() {
+        closeContinuousCsv();
+
+        try {
+            String stamp = new java.text.SimpleDateFormat(
+                    "yyyyMMdd_HHmmss",
+                    Locale.US
+            ).format(new java.util.Date());
+
+            continuousFile = new java.io.File(
+                    eventDir(),
+                    "FULL_RUN_" + stamp + ".csv"
+            );
+
+            continuousWriter = new java.io.BufferedWriter(
+                    new java.io.OutputStreamWriter(
+                            new java.io.FileOutputStream(continuousFile),
+                            java.nio.charset.StandardCharsets.UTF_8
+                    ),
+                    64 * 1024
+            );
+
+            continuousWriter.write(
+                    "DateTime,RealElapsedMs,ProcessElapsedMs,ProcessPaused,"
+                            + "Line,Equipment,Process,UnitAction,X,Y,Z,Total,Spec\n"
+            );
+
+            continuousSinceFlush = 0;
+
+        } catch (Exception e) {
+            continuousWriter = null;
+            continuousFile = null;
+        }
+    }
+
+    private void writeContinuousSample(
+            P p,
+            String processName,
+            String unitName,
+            long now
+    ) {
+        if (continuousWriter == null || startMs <= 0L) return;
+
+        try {
+            String ts = new java.text.SimpleDateFormat(
+                    "yyyy-MM-dd HH:mm:ss.SSS",
+                    Locale.US
+            ).format(new java.util.Date(p.wall));
+
+            continuousWriter.write(String.format(
+                    Locale.US,
+                    "%s,%d,%d,%s,%s,%s,%s,%s,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+                    ts,
+                    Math.max(0L, now - startMs),
+                    getProcessElapsedMs(now),
+                    processPaused ? "Y" : "N",
+                    safe(lineInput.getText().toString().trim()),
+                    safe(equipmentInput.getText().toString().trim()),
+                    safe(processName),
+                    safe(unitName),
+                    p.x,
+                    p.y,
+                    p.z,
+                    p.t,
+                    spec
+            ));
+
+            continuousSinceFlush++;
+
+            if (continuousSinceFlush >= 100) {
+                continuousWriter.flush();
+                continuousSinceFlush = 0;
+            }
+
+        } catch (Exception ignored) {}
+    }
+
+    private void closeContinuousCsv() {
+        if (continuousWriter != null) {
+            try {
+                continuousWriter.flush();
+                continuousWriter.close();
+            } catch (Exception ignored) {}
+        }
+
+        continuousWriter = null;
+        continuousSinceFlush = 0;
+    }
+
     private void startMon() {
         if (acc == null) {
             Toast.makeText(this, "가속도 센서가 없습니다.", Toast.LENGTH_LONG).show();
@@ -360,6 +761,15 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 .putString("line", lineInput.getText().toString().trim())
                 .putString("equipment", equipmentInput.getText().toString().trim())
                 .apply();
+
+        if (isAutoMode()) {
+            loadRecipeForProcess();
+
+            if (recipe.isEmpty()) {
+                Toast.makeText(this, "AUTO TIMELINE Recipe가 없습니다.", Toast.LENGTH_LONG).show();
+                return;
+            }
+        }
 
         running = true;
         calibrating = true;
@@ -407,6 +817,16 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         status.setText("● SENSOR CALIBRATION");
         status.setTextColor(Color.rgb(255, 185, 70));
 
+        lineInput.setEnabled(false);
+        equipmentInput.setEnabled(false);
+        process.setEnabled(false);
+        mode.setEnabled(false);
+        recipeButton.setEnabled(false);
+        unit.setEnabled(!isAutoMode());
+        pauseButton.setEnabled(false);
+        pauseButton.setText("PROCESS PAUSE");
+        processClock.setText("REAL 00:00 · PROCESS 00:00 · CALIBRATING");
+
         if (!cameraReady) setupCamera();
 
         startKeepAliveService();
@@ -428,6 +848,15 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         status.setText("● STOPPED / ANALYSIS READY");
         status.setTextColor(Color.rgb(255, 185, 70));
+
+        lineInput.setEnabled(true);
+        equipmentInput.setEnabled(true);
+        process.setEnabled(true);
+        mode.setEnabled(true);
+        recipeButton.setEnabled(isAutoMode());
+        unit.setEnabled(!isAutoMode());
+        pauseButton.setEnabled(false);
+        pauseButton.setText("PROCESS PAUSE");
 
         saveSessionCsv();
         saveUnitSummaryCsv();
@@ -495,17 +924,23 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
                 elapsed.setText("00:00:00");
                 total.setText("0.000 m/s²");
-                status.setText("● MONITORING · BACKGROUND READY");
+                status.setText(
+                        isAutoMode()
+                                ? "● MONITORING · AUTO TIMELINE"
+                                : "● MONITORING · MANUAL UNIT"
+                );
                 status.setTextColor(Color.rgb(80, 220, 150));
+                pauseButton.setEnabled(isAutoMode());
                 startUnitSegment(now);
+                openContinuousCsv();
 
-                Toast.makeText(this, "센서 안정화 완료 · 충격 감시 시작", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "센서 안정화 완료 · 연속 공정 감시 시작", Toast.LENGTH_SHORT).show();
             }
             return;
         }
 
         String selectedProcess = String.valueOf(process.getSelectedItem());
-        String selectedUnit = String.valueOf(unit.getSelectedItem());
+        String selectedUnit = currentTaggedUnit(now);
 
         if (segmentStartMs <= 0L) {
             startUnitSegment(now);
@@ -515,14 +950,17 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             startUnitSegment(now);
         }
 
-        segmentCount++;
-        segmentSumSq += t * t;
-        segmentPeak = Math.max(segmentPeak, t);
-        segmentMaxX = Math.max(segmentMaxX, Math.abs(x));
-        segmentMaxY = Math.max(segmentMaxY, Math.abs(y));
-        segmentMaxZ = Math.max(segmentMaxZ, Math.abs(z));
+        if (!isAutoMode() || !processPaused) {
+            segmentCount++;
+            segmentSumSq += t * t;
+            segmentPeak = Math.max(segmentPeak, t);
+            segmentMaxX = Math.max(segmentMaxX, Math.abs(x));
+            segmentMaxY = Math.max(segmentMaxY, Math.abs(y));
+            segmentMaxZ = Math.max(segmentMaxZ, Math.abs(z));
+        }
 
         P p = new P(System.currentTimeMillis(), now, x, y, z, t);
+        writeContinuousSample(p, selectedProcess, selectedUnit, now);
 
         pre.addLast(p);
         while (!pre.isEmpty() && now - pre.peekFirst().mono > 3000L) {
@@ -568,7 +1006,11 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         graph.add(x, y, z, t, spec);
 
         if (startMs > 0L) {
-            timeline.setDuration(Math.max(1L, (now - startMs) / 1000L));
+            timeline.setDuration(
+                    isAutoMode()
+                            ? Math.max(1L, Math.round(recipeTotalSec()))
+                            : Math.max(1L, (now - startMs) / 1000L)
+            );
         }
 
         if (now - lastCheckpointMs >= 15000L) {
@@ -594,8 +1036,27 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             rms.setText(String.format(Locale.US, "RMS\n%.3f", Math.sqrt(sumSq / Math.max(1L, n))));
             impact.setText("IMPACT\n" + impactCount);
 
+            long processSec = getProcessElapsedMs(now) / 1000L;
+
+            processClock.setText(String.format(
+                    Locale.US,
+                    "REAL %02d:%02d · PROCESS %02d:%02d · %s",
+                    sec / 60,
+                    sec % 60,
+                    processSec / 60,
+                    processSec % 60,
+                    processPaused ? "PAUSED" : selectedUnit
+            ));
+
             long segmentSec = segmentStartMs > 0L
-                    ? Math.max(0L, (now - segmentStartMs) / 1000L)
+                    ? Math.max(
+                            0L,
+                            (
+                                    isAutoMode()
+                                            ? getProcessElapsedMs(now) - segmentProcessStartMs
+                                            : now - segmentStartMs
+                            ) / 1000L
+                    )
                     : 0L;
             double segmentRms = segmentCount > 0L
                     ? Math.sqrt(segmentSumSq / segmentCount)
@@ -635,7 +1096,10 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         eventLine = lineInput.getText().toString().trim();
         eventEquipment = equipmentInput.getText().toString().trim();
         ep = String.valueOf(process.getSelectedItem());
-        eu = String.valueOf(unit.getSelectedItem());
+        eu = currentTaggedUnit(now);
+        eventProcessOffsetSec = isAutoMode()
+                ? getProcessElapsedMs(now) / 1000L
+                : Math.max(0L, (now - startMs) / 1000L);
 
         base = String.format(
                 Locale.US,
@@ -690,12 +1154,16 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         record.my = st.my;
         record.mz = st.mz;
         record.base = bn;
-        record.offsetSec = startMs > 0L ? Math.max(0L, (eventStart - startMs) / 1000L) : 0L;
+        record.offsetSec = eventProcessOffsetSec;
         sessionEvents.add(record);
 
-        long timelineDuration = startMs > 0L
-                ? Math.max(1L, (SystemClock.elapsedRealtime() - startMs) / 1000L)
-                : 1L;
+        long timelineDuration = isAutoMode()
+                ? Math.max(1L, Math.round(recipeTotalSec()))
+                : (
+                        startMs > 0L
+                                ? Math.max(1L, (SystemClock.elapsedRealtime() - startMs) / 1000L)
+                                : 1L
+                );
         timeline.refresh(sessionEvents, timelineDuration);
         saveActiveCheckpoint();
 
@@ -962,7 +1430,10 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         segmentMaxZ = 0.0;
         segmentImpactStartCount = impactCount;
         segmentProcess = String.valueOf(process.getSelectedItem());
-        segmentUnit = String.valueOf(unit.getSelectedItem());
+        segmentUnit = currentTaggedUnit(now);
+        segmentProcessStartMs = isAutoMode()
+                ? getProcessElapsedMs(now)
+                : now;
 
         if (segmentInfo != null) {
             segmentInfo.setText(
@@ -983,7 +1454,10 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         UnitSegment r = new UnitSegment();
         r.process = segmentProcess;
         r.unit = segmentUnit;
-        r.durationSec = Math.max(0.0, (now - segmentStartMs) / 1000.0);
+        long segmentElapsedMs = isAutoMode()
+                ? Math.max(0L, getProcessElapsedMs(now) - segmentProcessStartMs)
+                : Math.max(0L, now - segmentStartMs);
+        r.durationSec = segmentElapsedMs / 1000.0;
         r.peak = segmentPeak;
         r.rms = Math.sqrt(segmentSumSq / Math.max(1L, segmentCount));
         r.impactCount = Math.max(0, impactCount - segmentImpactStartCount);
@@ -1649,11 +2123,17 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        closeContinuousCsv();
 
         if (!running) {
             sm.unregisterListener(this);
             closeCamera();
         }
+    }
+
+    static class RecipeUnit {
+        String name = "U";
+        double seconds = 10.0;
     }
 
     static class P {
