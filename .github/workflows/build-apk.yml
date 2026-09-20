@@ -105,8 +105,6 @@ jobs:
           }
           EOF
 
-      - name: Show Android tasks
-        run: gradle :app:tasks --all
 
       - name: Build APK
         env:
