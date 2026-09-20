@@ -623,9 +623,29 @@ public class MainActivity extends Activity implements SensorEventListener {
         logo.setBackgroundColor(Color.WHITE); logo.setPadding((int)(8*den),(int)(5*den),(int)(8*den),(int)(5*den));
         LinearLayout.LayoutParams finalHeaderLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(90*den)); finalHeaderLp.setMargins(0,(int)(2*den),0,0); root.addView(header,finalHeaderLp);
 
+        LinearLayout infoRow=new LinearLayout(this);
+        infoRow.setOrientation(LinearLayout.HORIZONTAL);
+        infoRow.setGravity(Gravity.CENTER_VERTICAL);
+
         TextView sub=new TextView(this);
         sub.setText("REAL-TIME 3-AXIS CONDITION MONITORING"); sub.setTextSize(11); sub.setTextColor(muted);
-        sub.setLetterSpacing(0.08f); sub.setPadding((int)(4*den),(int)(10*den),0,(int)(8*den)); root.addView(sub);
+        sub.setLetterSpacing(0.08f); sub.setPadding((int)(4*den),(int)(10*den),0,(int)(8*den));
+        infoRow.addView(sub,new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f));
+
+        TextView versionText=new TextView(this);
+        String shortVersion="3.4.1";
+        try{
+            android.content.pm.PackageInfo pi=getPackageManager().getPackageInfo(getPackageName(),0);
+            String vn=pi.versionName;
+            if(vn!=null&&!vn.trim().isEmpty()) shortVersion=vn.split("-")[0];
+        }catch(Exception ignored){}
+        versionText.setText("v"+shortVersion);
+        versionText.setTextSize(8);
+        versionText.setTextColor(Color.rgb(145,156,166));
+        versionText.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);
+        versionText.setPadding((int)(4*den),(int)(8*den),(int)(4*den),(int)(6*den));
+        infoRow.addView(versionText,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT));
+        root.addView(infoRow);
 
         LinearLayout statusPanel=new LinearLayout(this); statusPanel.setOrientation(LinearLayout.VERTICAL);
         statusPanel.setPadding((int)(14*den),(int)(10*den),(int)(14*den),(int)(10*den));
