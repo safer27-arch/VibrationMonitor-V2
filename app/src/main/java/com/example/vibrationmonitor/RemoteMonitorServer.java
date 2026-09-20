@@ -126,9 +126,15 @@ public class RemoteMonitorServer {
     private void serveLoop(ServerSocket ss) {
         while (running) {
             try {
-                Socket socket = ss.accept();
+                final Socket socket = ss.accept();
                 socket.setSoTimeout(2500);
-                handle(socket);
+
+                Thread client = new Thread(
+                        () -> handle(socket),
+                        "RemoteMonitorClient"
+                );
+                client.setDaemon(true);
+                client.start();
 
             } catch (Exception e) {
                 if (running) {
@@ -266,11 +272,12 @@ public class RemoteMonitorServer {
                 + ".wide{background:white;border-radius:12px;padding:10px;margin-top:8px}"
                 + "canvas{width:100%;height:210px;background:white;border-radius:10px}"
                 + "#tl{height:92px}.small{font-size:12px;color:#5d7181}"
-                + ".live{color:#14b878}.stop{color:#e0a02d}.err{color:#e05c61}"
+                + ".live{color:#14b878}.stop{color:#e0a02d}.warn{color:#f0ad35}.err{color:#e05c61}"
                 + "</style></head><body><div class='wrap'>"
                 + "<div class='head'><div style='font-size:24px;font-weight:800'>PROCESS SHOCK REMOTE</div>"
                 + "<div class='sub'>READ ONLY · Wi-Fi / Hotspot Live Monitor</div>"
-                + "<div id='st' class='status'>CONNECTING...</div></div>"
+                + "<div id='st' class='status'>CONNECTING...</div>"
+                + "<div id='age' class='sub'>Last update : waiting...</div></div>"
                 + "<div class='wide'><b id='ctx'>-</b><div class='small' id='clock'>-</div></div>"
                 + "<div class='row'>"
                 + "<div class='card'><div class='k'>TOTAL</div><div class='v' id='total'>0.000</div></div>"
@@ -292,6 +299,8 @@ public class RemoteMonitorServer {
                 + "<script>"
                 + "const k=new URLSearchParams(location.search).get('k')||'';"
                 + "const $=id=>document.getElementById(id);"
+                + "let lastOk=0,failCount=0;"
+                + "function ageText(){if(!lastOk)return 'Last update : waiting...';let a=(Date.now()-lastOk)/1000;return 'Last update : '+a.toFixed(1)+'s ago'}"
                 + "function fit(c,h){let d=devicePixelRatio||1;c.width=Math.max(320,c.clientWidth*d);c.height=h*d;return d}"
                 + "function graph(s){let c=$('g'),d=fit(c,210),q=c.getContext('2d'),w=c.width,h=c.height;"
                 + "q.clearRect(0,0,w,h);let pts=s.points||[];let max=Math.max(3,s.spec*1.5);"
@@ -315,14 +324,21 @@ public class RemoteMonitorServer {
                 + "(s.events||[]).forEach(e=>{let xx=w*Math.min(1,e.t/Math.max(.1,display));q.strokeStyle='#cd4448';q.lineWidth=2*d;q.beginPath();q.moveTo(xx,6*d);q.lineTo(xx,72*d);q.stroke()});"
                 + "q.fillStyle='#333';q.font=(10*d)+'px Arial';q.fillText('0s',0,90*d);q.fillText(display.toFixed(1)+'s',Math.max(0,w-42*d),90*d)}"
                 + "async function poll(){try{let r=await fetch('/state?k='+encodeURIComponent(k),{cache:'no-store'});if(!r.ok)throw 0;let s=await r.json();"
+                + "lastOk=Date.now();failCount=0;"
                 + "$('st').textContent=s.calibrating?'● CALIBRATING':(s.running?'● LIVE MONITORING':'● READY / STOPPED');"
                 + "$('st').className='status '+(s.running?'live':'stop');"
+                + "$('age').textContent=ageText();"
                 + "$('ctx').textContent=(s.line||'-')+' / '+(s.equipment||'-')+' / '+(s.process||'-')+' / '+(s.unit||'-');"
                 + "$('clock').textContent='PROCESS '+Number(s.processSec).toFixed(1)+'s / MCSC '+Number(s.mcscTotal).toFixed(1)+'s · '+(s.timelineState||'-');"
                 + "$('total').textContent=Number(s.total).toFixed(3);$('peak').textContent=Number(s.peak).toFixed(3);$('rms').textContent=Number(s.rms).toFixed(3);"
                 + "$('x').textContent=Number(s.x).toFixed(3);$('y').textContent=Number(s.y).toFixed(3);$('z').textContent=Number(s.z).toFixed(3);"
                 + "$('mcscTxt').textContent='Unit '+(s.unit||'-')+' · '+Number(s.processSec).toFixed(1)+'s / '+Number(s.mcscTotal).toFixed(1)+'s';"
-                + "$('last').textContent=s.lastImpact||'-';graph(s);timeline(s)}catch(e){$('st').textContent='● CONNECTION LOST';$('st').className='status err'}finally{setTimeout(poll,200)}}"
+                + "$('last').textContent=s.lastImpact||'-';graph(s);timeline(s)}"
+                + "catch(e){failCount++;let age=lastOk?(Date.now()-lastOk)/1000:999;"
+                + "$('age').textContent=ageText();"
+                + "if(age<3.0||failCount<5){$('st').textContent='● RECONNECTING...';$('st').className='status warn'}"
+                + "else{$('st').textContent='● CONNECTION LOST · RETRYING';$('st').className='status err'}}"
+                + "finally{setTimeout(poll,250)}}"
                 + "poll();</script></body></html>";
     }
 }
