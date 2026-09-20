@@ -33,6 +33,10 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
     private java.io.BufferedWriter continuousWriter = null;
     private java.io.File continuousFile = null;
+    private java.io.File currentRunSummaryFile = null;
+    private java.io.File currentUnitSummaryFile = null;
+    private java.io.File currentImpactSummaryFile = null;
+    private long runStartWallMs = 0L;
     private int continuousSinceFlush = 0;
 
     private final ArrayList<UnitSegment> unitSegments = new ArrayList<>();
@@ -429,12 +433,26 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         last.setBackground(bg(Color.WHITE, 12));
         root.addView(last);
 
-        Button history = btn("IMPACT EVENT HISTORY", Color.rgb(42, 91, 126));
-        LinearLayout.LayoutParams hp =
-                new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(50));
-        hp.setMargins(0, dp(9), 0, 0);
-        root.addView(history, hp);
+        LinearLayout dataActionRow = new LinearLayout(this);
+        dataActionRow.setOrientation(LinearLayout.HORIZONTAL);
+
+        Button history = btn("EVENT HISTORY", Color.rgb(42, 91, 126));
+        history.setTextSize(12);
+        LinearLayout.LayoutParams historyLp =
+                new LinearLayout.LayoutParams(0, dp(50), 1f);
+        historyLp.setMargins(0, dp(9), dp(3), 0);
+        dataActionRow.addView(history, historyLp);
         history.setOnClickListener(v -> showHistory());
+
+        Button dataDownload = btn("DATA DOWNLOAD", Color.rgb(40, 112, 145));
+        dataDownload.setTextSize(12);
+        LinearLayout.LayoutParams downloadLp =
+                new LinearLayout.LayoutParams(0, dp(50), 1f);
+        downloadLp.setMargins(dp(3), dp(9), 0, 0);
+        dataActionRow.addView(dataDownload, downloadLp);
+        dataDownload.setOnClickListener(v -> showExportDialog());
+
+        root.addView(dataActionRow);
 
         Button start = btn("START MONITORING", Color.rgb(0, 145, 105));
         Button stop = btn("STOP & ANALYZE", Color.rgb(190, 55, 55));
@@ -974,6 +992,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         saveSessionCsv();
         saveUnitSummaryCsv();
+        saveRunSummaryCsv();
         clearActiveCheckpoint();
         showSessionSummary();
     }
@@ -1634,6 +1653,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 eventDir(),
                 "UNIT_SUMMARY_" + stamp + ".csv"
         );
+        currentUnitSummaryFile = f;
 
         try (java.io.PrintWriter o = new java.io.PrintWriter(
                 new java.io.OutputStreamWriter(
@@ -1674,6 +1694,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 .format(new java.util.Date());
 
         java.io.File f = new java.io.File(eventDir(), "SESSION_" + stamp + ".csv");
+        currentImpactSummaryFile = f;
 
         try (java.io.PrintWriter o = new java.io.PrintWriter(
                 new java.io.OutputStreamWriter(
@@ -1697,6 +1718,411 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 ));
             }
         } catch (Exception ignored) {}
+    }
+
+    private void saveRunSummaryCsv() {
+        String stamp = new java.text.SimpleDateFormat(
+                "yyyyMMdd_HHmmss",
+                Locale.US
+        ).format(new java.util.Date(
+                runStartWallMs > 0L ? runStartWallMs : System.currentTimeMillis()
+        ));
+
+        currentRunSummaryFile = new java.io.File(
+                eventDir(),
+                "RUN_SUMMARY_" + stamp + ".csv"
+        );
+
+        long now = SystemClock.elapsedRealtime();
+        long realDurationSec = startMs > 0L
+                ? Math.max(0L, (now - startMs) / 1000L)
+                : 0L;
+        long processDurationSec = startMs > 0L
+                ? Math.max(0L, getProcessElapsedMs(now) / 1000L)
+                : 0L;
+        double sessionRms = n > 0L ? Math.sqrt(sumSq / n) : 0.0;
+
+        String mainAxis =
+                sessionMaxX >= sessionMaxY && sessionMaxX >= sessionMaxZ
+                        ? "X"
+                        : (sessionMaxY >= sessionMaxZ ? "Y" : "Z");
+
+        try (java.io.PrintWriter o = new java.io.PrintWriter(
+                new java.io.OutputStreamWriter(
+                        new java.io.FileOutputStream(currentRunSummaryFile),
+                        java.nio.charset.StandardCharsets.UTF_8
+                )
+        )) {
+            o.println(
+                    "RunStart,Line,Equipment,Process,Mode,RealDurationSec,"
+                            + "ProcessDurationSec,ImpactCount,Peak,RMS,MainAxis,"
+                            + "XPeak,YPeak,ZPeak,Spec,RawFile"
+            );
+
+            String startText = new java.text.SimpleDateFormat(
+                    "yyyy-MM-dd HH:mm:ss",
+                    Locale.US
+            ).format(new java.util.Date(
+                    runStartWallMs > 0L ? runStartWallMs : System.currentTimeMillis()
+            ));
+
+            o.println(String.format(
+                    Locale.US,
+                    "%s,%s,%s,%s,%s,%d,%d,%d,%.6f,%.6f,%s,"
+                            + "%.6f,%.6f,%.6f,%.6f,%s",
+                    startText,
+                    safe(lineInput.getText().toString().trim()),
+                    safe(equipmentInput.getText().toString().trim()),
+                    safe(String.valueOf(process.getSelectedItem())),
+                    safe(isAutoMode() ? "AUTO_TIMELINE" : "MANUAL_UNIT"),
+                    realDurationSec,
+                    processDurationSec,
+                    impactCount,
+                    sessionPeak,
+                    sessionRms,
+                    mainAxis,
+                    sessionMaxX,
+                    sessionMaxY,
+                    sessionMaxZ,
+                    spec,
+                    continuousFile == null ? "" : safe(continuousFile.getName())
+            ));
+
+            o.println();
+            o.println("RecipeOrder,UnitAction,TargetSec");
+
+            for (int i = 0; i < recipe.size(); i++) {
+                RecipeUnit r = recipe.get(i);
+                o.println(String.format(
+                        Locale.US,
+                        "%d,%s,%.3f",
+                        i + 1,
+                        safe(r.name),
+                        r.seconds
+                ));
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private String exportPrefix() {
+        String stamp = new java.text.SimpleDateFormat(
+                "yyyyMMdd_HHmmss",
+                Locale.US
+        ).format(new java.util.Date(
+                runStartWallMs > 0L ? runStartWallMs : System.currentTimeMillis()
+        ));
+
+        String ln = exportFilePart(lineInput.getText().toString().trim());
+        String eq = exportFilePart(equipmentInput.getText().toString().trim());
+        String pp = exportFilePart(String.valueOf(process.getSelectedItem()));
+
+        return "VM_" + stamp
+                + "_" + (ln.isEmpty() ? "Line" : ln)
+                + "_" + (eq.isEmpty() ? "Equip" : eq)
+                + "_" + (pp.isEmpty() ? "Process" : pp);
+    }
+
+    private String exportFilePart(String value) {
+        if (value == null) return "";
+
+        return value.trim()
+                .replaceAll("[^A-Za-z0-9._-]+", "_")
+                .replaceAll("^_+|_+$", "");
+    }
+
+    private void showExportDialog() {
+        if (running) {
+            Toast.makeText(
+                    this,
+                    "측정을 종료한 뒤 DATA DOWNLOAD를 실행해주세요.",
+                    Toast.LENGTH_LONG
+            ).show();
+            return;
+        }
+
+        if (continuousFile == null || !continuousFile.exists()) {
+            Toast.makeText(
+                    this,
+                    "다운로드할 측정 데이터가 없습니다.",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
+        final String[] items = {
+                "전체 데이터 ZIP  · RAW + 평가 + 사진/그래프",
+                "전체 RAW CSV  · 모든 측정값",
+                "RUN SUMMARY CSV  · 전체 평가",
+                "UNIT SUMMARY CSV  · Unit별 평가",
+                "IMPACT SUMMARY CSV  · 충격 이벤트 평가",
+                "EVENT BLACKBOX ZIP  · 사진 + 그래프 + Event CSV"
+        };
+
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("MEASUREMENT DATA DOWNLOAD")
+                .setMessage("저장 위치 : Download / VibrationMonitor")
+                .setItems(items, (d, which) -> exportCurrentData(which))
+                .setNegativeButton("취소", null)
+                .show();
+    }
+
+    private void exportCurrentData(int which) {
+        new Thread(() -> {
+            boolean ok = false;
+            String savedName = "";
+
+            try {
+                try { Thread.sleep(500L); } catch (Exception ignored) {}
+
+                String prefix = exportPrefix();
+
+                if (which == 0) {
+                    java.io.File z = buildExportZip(false);
+                    savedName = prefix + "_ALL_DATA.zip";
+                    ok = copyToPublicDownloads(z, savedName, "application/zip");
+                    if (z != null && z.exists()) z.delete();
+
+                } else if (which == 1) {
+                    savedName = prefix + "_FULL_RAW.csv";
+                    ok = copyToPublicDownloads(continuousFile, savedName, "text/csv");
+
+                } else if (which == 2) {
+                    savedName = prefix + "_RUN_SUMMARY.csv";
+                    ok = copyToPublicDownloads(currentRunSummaryFile, savedName, "text/csv");
+
+                } else if (which == 3) {
+                    savedName = prefix + "_UNIT_SUMMARY.csv";
+                    ok = copyToPublicDownloads(currentUnitSummaryFile, savedName, "text/csv");
+
+                } else if (which == 4) {
+                    savedName = prefix + "_IMPACT_SUMMARY.csv";
+                    ok = copyToPublicDownloads(currentImpactSummaryFile, savedName, "text/csv");
+
+                } else if (which == 5) {
+                    java.io.File z = buildExportZip(true);
+                    savedName = prefix + "_EVENT_BLACKBOX.zip";
+                    ok = copyToPublicDownloads(z, savedName, "application/zip");
+                    if (z != null && z.exists()) z.delete();
+                }
+
+            } catch (Exception ignored) {
+                ok = false;
+            }
+
+            final boolean result = ok;
+            final String name = savedName;
+
+            runOnUiThread(() -> Toast.makeText(
+                    this,
+                    result
+                            ? "다운로드 완료\nDownload/VibrationMonitor/" + name
+                            : "다운로드 실패 또는 해당 데이터가 없습니다.",
+                    Toast.LENGTH_LONG
+            ).show());
+        }).start();
+    }
+
+    private java.io.File buildExportZip(boolean eventsOnly) throws Exception {
+        java.io.File z = new java.io.File(
+                getCacheDir(),
+                "vm_export_" + System.currentTimeMillis() + ".zip"
+        );
+
+        try (java.util.zip.ZipOutputStream out =
+                     new java.util.zip.ZipOutputStream(
+                             new java.io.BufferedOutputStream(
+                                     new java.io.FileOutputStream(z)
+                             )
+                     )) {
+
+            if (!eventsOnly) {
+                zipAddText(out, "00_README.txt", buildExportManifest());
+
+                zipAddFile(
+                        out,
+                        continuousFile,
+                        "RAW/" + (
+                                continuousFile == null
+                                        ? "FULL_RUN.csv"
+                                        : continuousFile.getName()
+                        )
+                );
+                zipAddFile(out, currentRunSummaryFile, "SUMMARY/RUN_SUMMARY.csv");
+                zipAddFile(out, currentUnitSummaryFile, "SUMMARY/UNIT_SUMMARY.csv");
+                zipAddFile(out, currentImpactSummaryFile, "SUMMARY/IMPACT_SUMMARY.csv");
+            }
+
+            for (EventRecord r : sessionEvents) {
+                String bn = r.base;
+                if (bn == null || bn.trim().isEmpty()) continue;
+
+                zipAddFile(out, new java.io.File(eventDir(), bn + ".csv"), "EVENTS/" + bn + ".csv");
+                zipAddFile(out, new java.io.File(eventDir(), bn + ".jpg"), "EVENTS/" + bn + ".jpg");
+                zipAddFile(out, new java.io.File(eventDir(), bn + "_graph.png"), "EVENTS/" + bn + "_graph.png");
+                zipAddFile(out, new java.io.File(eventDir(), bn + "_summary.txt"), "EVENTS/" + bn + "_summary.txt");
+            }
+
+            if (eventsOnly && sessionEvents.isEmpty()) {
+                zipAddText(out, "NO_EVENT.txt", "No impact event was recorded in this session.");
+            }
+        }
+
+        return z;
+    }
+
+    private String buildExportManifest() {
+        StringBuilder b = new StringBuilder();
+        b.append("VIBRATION MONITOR - PROCESS SHOCK DATA PACKAGE\n\n");
+        b.append("Line : ").append(blank(lineInput.getText().toString())).append("\n");
+        b.append("Equipment : ").append(blank(equipmentInput.getText().toString())).append("\n");
+        b.append("Process : ").append(String.valueOf(process.getSelectedItem())).append("\n");
+        b.append("Mode : ").append(isAutoMode() ? "AUTO TIMELINE" : "MANUAL UNIT").append("\n");
+        b.append(String.format(Locale.US, "SPEC : %.3f m/s²\n", spec));
+        b.append("Impact Count : ").append(impactCount).append("\n\n");
+        b.append("FOLDERS\n");
+        b.append("RAW      : every measured X/Y/Z/Total sample\n");
+        b.append("SUMMARY  : run / unit / impact evaluation CSV\n");
+        b.append("EVENTS   : impact photo / graph / event CSV / text summary\n\n");
+        b.append("RECIPE\n");
+
+        for (int i = 0; i < recipe.size(); i++) {
+            RecipeUnit r = recipe.get(i);
+            b.append(i + 1)
+                    .append(". ")
+                    .append(r.name)
+                    .append(" : ")
+                    .append(String.format(Locale.US, "%.3f sec", r.seconds))
+                    .append("\n");
+        }
+
+        return b.toString();
+    }
+
+    private void zipAddText(
+            java.util.zip.ZipOutputStream out,
+            String entryName,
+            String text
+    ) throws Exception {
+        out.putNextEntry(new java.util.zip.ZipEntry(entryName));
+        byte[] bytes = text.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        out.write(bytes);
+        out.closeEntry();
+    }
+
+    private void zipAddFile(
+            java.util.zip.ZipOutputStream out,
+            java.io.File source,
+            String entryName
+    ) throws Exception {
+        if (source == null || !source.exists() || !source.isFile()) return;
+
+        out.putNextEntry(new java.util.zip.ZipEntry(entryName));
+
+        try (java.io.BufferedInputStream in =
+                     new java.io.BufferedInputStream(
+                             new java.io.FileInputStream(source)
+                     )) {
+            byte[] buf = new byte[64 * 1024];
+            int nRead;
+
+            while ((nRead = in.read(buf)) > 0) {
+                out.write(buf, 0, nRead);
+            }
+        }
+
+        out.closeEntry();
+    }
+
+    private boolean copyToPublicDownloads(
+            java.io.File source,
+            String displayName,
+            String mime
+    ) {
+        if (source == null || !source.exists() || !source.isFile()) {
+            return false;
+        }
+
+        try {
+            if (Build.VERSION.SDK_INT >= 29) {
+                android.content.ContentValues values =
+                        new android.content.ContentValues();
+
+                values.put(
+                        android.provider.MediaStore.MediaColumns.DISPLAY_NAME,
+                        displayName
+                );
+                values.put(
+                        android.provider.MediaStore.MediaColumns.MIME_TYPE,
+                        mime
+                );
+                values.put(
+                        android.provider.MediaStore.MediaColumns.RELATIVE_PATH,
+                        android.os.Environment.DIRECTORY_DOWNLOADS + "/VibrationMonitor"
+                );
+
+                android.net.Uri uri = getContentResolver().insert(
+                        android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                        values
+                );
+
+                if (uri == null) return false;
+
+                try (
+                        java.io.InputStream in =
+                                new java.io.BufferedInputStream(
+                                        new java.io.FileInputStream(source)
+                                );
+                        java.io.OutputStream out =
+                                new java.io.BufferedOutputStream(
+                                        getContentResolver().openOutputStream(uri)
+                                )
+                ) {
+                    byte[] buf = new byte[64 * 1024];
+                    int nRead;
+
+                    while ((nRead = in.read(buf)) > 0) {
+                        out.write(buf, 0, nRead);
+                    }
+                    out.flush();
+                }
+
+                return true;
+            }
+
+            java.io.File dir = new java.io.File(
+                    android.os.Environment.getExternalStoragePublicDirectory(
+                            android.os.Environment.DIRECTORY_DOWNLOADS
+                    ),
+                    "VibrationMonitor"
+            );
+
+            if (!dir.exists()) dir.mkdirs();
+
+            java.io.File dest = new java.io.File(dir, displayName);
+
+            try (
+                    java.io.InputStream in =
+                            new java.io.BufferedInputStream(
+                                    new java.io.FileInputStream(source)
+                            );
+                    java.io.OutputStream out =
+                            new java.io.BufferedOutputStream(
+                                    new java.io.FileOutputStream(dest)
+                            )
+            ) {
+                byte[] buf = new byte[64 * 1024];
+                int nRead;
+
+                while ((nRead = in.read(buf)) > 0) {
+                    out.write(buf, 0, nRead);
+                }
+            }
+
+            return true;
+
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private void saveActiveCheckpoint() {
@@ -1886,6 +2312,10 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         new android.app.AlertDialog.Builder(this)
                 .setTitle("SESSION SUMMARY")
                 .setView(sv)
+                .setNeutralButton(
+                        "DATA DOWNLOAD",
+                        (d, w) -> showExportDialog()
+                )
                 .setPositiveButton("확인", null)
                 .show();
     }
