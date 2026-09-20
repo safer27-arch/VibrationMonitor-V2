@@ -18,6 +18,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     private Spinner process, unit;
     private EditText lineInput, equipmentInput;
     private ShockGraph graph;
+    private ImpactTimelineView timeline;
+    private long lastCheckpointMs = 0L;
 
     private boolean running = false;
     private boolean calibrating = false;
@@ -219,6 +221,40 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 dp(280)
         ));
 
+        LinearLayout scaleRow = new LinearLayout(this);
+        scaleRow.setOrientation(LinearLayout.HORIZONTAL);
+        scaleRow.setGravity(Gravity.CENTER_VERTICAL);
+        TextView scaleLabel = tv("GRAPH SCALE", 11, Color.rgb(70, 90, 105));
+        scaleRow.addView(scaleLabel, new LinearLayout.LayoutParams(0, dp(44), 1.2f));
+
+        String[] scaleNames = {"AUTO", "2", "5", "10", "20"};
+        double[] scaleValues = {0.0, 2.0, 5.0, 10.0, 20.0};
+
+        for (int i = 0; i < scaleNames.length; i++) {
+            Button sb = new Button(this);
+            sb.setText(scaleNames[i]);
+            sb.setTextSize(10);
+            sb.setAllCaps(false);
+            sb.setMinHeight(dp(38));
+            sb.setPadding(0, 0, 0, 0);
+            final double scaleValue = scaleValues[i];
+            sb.setOnClickListener(v -> graph.setScale(scaleValue));
+            LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(0, dp(42), 1f);
+            slp.setMargins(dp(2), dp(2), dp(2), dp(2));
+            scaleRow.addView(sb, slp);
+        }
+        root.addView(scaleRow);
+
+        TextView timelineTitle = tv("IMPACT TIMELINE", 12, Color.rgb(15, 38, 61));
+        timelineTitle.setTypeface(null, 1);
+        root.addView(timelineTitle);
+
+        timeline = new ImpactTimelineView(this);
+        root.addView(timeline, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                dp(105)
+        ));
+
         dir = tv("MAIN DIRECTION : -", 16, Color.rgb(15, 38, 61));
         dir.setGravity(Gravity.CENTER);
         dir.setBackground(bg(Color.WHITE, 12));
@@ -313,6 +349,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         event.clear();
         sessionEvents.clear();
         graph.clear();
+        timeline.clear();
+        lastCheckpointMs = 0L;
 
         elapsed.setText("CALIBRATING 2.0s");
         total.setText("0.000 m/s²");
@@ -347,6 +385,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         status.setTextColor(Color.rgb(255, 185, 70));
 
         saveSessionCsv();
+        clearActiveCheckpoint();
         showSessionSummary();
     }
 
@@ -463,6 +502,15 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         graph.add(x, y, z, t, spec);
 
+        if (startMs > 0L) {
+            timeline.setDuration(Math.max(1L, (now - startMs) / 1000L));
+        }
+
+        if (now - lastCheckpointMs >= 15000L) {
+            lastCheckpointMs = now;
+            saveActiveCheckpoint();
+        }
+
         if (now - lastUi > 80L) {
             lastUi = now;
 
@@ -557,7 +605,14 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         record.my = st.my;
         record.mz = st.mz;
         record.base = bn;
+        record.offsetSec = startMs > 0L ? Math.max(0L, (eventStart - startMs) / 1000L) : 0L;
         sessionEvents.add(record);
+
+        long timelineDuration = startMs > 0L
+                ? Math.max(1L, (SystemClock.elapsedRealtime() - startMs) / 1000L)
+                : 1L;
+        timeline.refresh(sessionEvents, timelineDuration);
+        saveActiveCheckpoint();
 
         last.setText(String.format(
                 Locale.US,
@@ -844,6 +899,82 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         } catch (Exception ignored) {}
     }
 
+    private void saveActiveCheckpoint() {
+        if (!running || startMs <= 0L) return;
+
+        java.io.File f = new java.io.File(eventDir(), "SESSION_ACTIVE.csv");
+
+        try (java.io.PrintWriter o = new java.io.PrintWriter(
+                new java.io.OutputStreamWriter(
+                        new java.io.FileOutputStream(f),
+                        java.nio.charset.StandardCharsets.UTF_8
+                )
+        )) {
+            long now = SystemClock.elapsedRealtime();
+            long durationSec = Math.max(0L, (now - startMs) / 1000L);
+            double sessionRms = n > 0L ? Math.sqrt(sumSq / n) : 0.0;
+
+            o.println("Status,DurationSec,ImpactCount,SessionPeak,SessionRMS,Spec");
+            o.println(String.format(
+                    Locale.US,
+                    "ACTIVE,%d,%d,%.6f,%.6f,%.6f",
+                    durationSec,
+                    impactCount,
+                    sessionPeak,
+                    sessionRms,
+                    spec
+            ));
+
+            o.println();
+            o.println("Event,OffsetSec,Line,Equipment,Process,UnitAction,Peak,RMS,DurationSec,Axis");
+
+            for (EventRecord r : sessionEvents) {
+                o.println(String.format(
+                        Locale.US,
+                        "%d,%d,%s,%s,%s,%s,%.6f,%.6f,%.3f,%s",
+                        r.no,
+                        r.offsetSec,
+                        safe(r.line),
+                        safe(r.equipment),
+                        safe(r.process),
+                        safe(r.unit),
+                        r.peak,
+                        r.rms,
+                        r.duration,
+                        r.axis
+                ));
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void clearActiveCheckpoint() {
+        try {
+            java.io.File f = new java.io.File(eventDir(), "SESSION_ACTIVE.csv");
+            if (f.exists()) f.delete();
+        } catch (Exception ignored) {}
+    }
+
+    private ArrayList<UnitAggregate> buildUnitAggregates() {
+        LinkedHashMap<String, UnitAggregate> map = new LinkedHashMap<>();
+
+        for (EventRecord r : sessionEvents) {
+            String key = blank(r.process) + " > " + blank(r.unit);
+            UnitAggregate a = map.get(key);
+
+            if (a == null) {
+                a = new UnitAggregate();
+                a.label = key;
+                map.put(key, a);
+            }
+
+            a.count++;
+            a.maxPeak = Math.max(a.maxPeak, r.peak);
+            a.rmsSum += r.rms;
+        }
+
+        return new ArrayList<>(map.values());
+    }
+
     private void showSessionSummary() {
         long now = SystemClock.elapsedRealtime();
         long durationSec = startMs > 0L ? Math.max(0L, (now - startMs) / 1000L) : 0L;
@@ -903,11 +1034,23 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         box.addView(tv(summary, 15, Color.DKGRAY));
 
         if (!sessionEvents.isEmpty()) {
-            TextView chartTitle = tv("UNIT / EVENT PEAK COMPARISON", 13, Color.rgb(15, 38, 61));
+            TextView chartTitle = tv("EVENT PEAK COMPARISON", 13, Color.rgb(15, 38, 61));
             chartTitle.setTypeface(null, 1);
             box.addView(chartTitle);
             box.addView(new SessionBarsView(this, sessionEvents),
                     new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(220)));
+
+            ArrayList<UnitAggregate> aggregates = buildUnitAggregates();
+            TextView unitTitle = tv("UNIT SUMMARY · MAX PEAK / IMPACT COUNT", 13, Color.rgb(15, 38, 61));
+            unitTitle.setTypeface(null, 1);
+            box.addView(unitTitle);
+            box.addView(
+                    new UnitSummaryView(this, aggregates),
+                    new LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            dp(Math.max(180, aggregates.size() * 74))
+                    )
+            );
         }
 
         ScrollView sv = new ScrollView(this);
@@ -1329,8 +1472,134 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     static class EventRecord {
         int no;
         long timeMs;
+        long offsetSec;
         String line, equipment, process, unit, axis, base;
         double peak, rms, duration, mx, my, mz;
+    }
+
+    static class UnitAggregate {
+        String label = "-";
+        int count = 0;
+        double maxPeak = 0.0;
+        double rmsSum = 0.0;
+
+        double avgRms() {
+            return count > 0 ? rmsSum / count : 0.0;
+        }
+    }
+
+    static class ImpactTimelineView extends View {
+        private final ArrayList<EventRecord> data = new ArrayList<>();
+        private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private long durationSec = 1L;
+
+        ImpactTimelineView(android.content.Context c) {
+            super(c);
+            setBackgroundColor(Color.WHITE);
+        }
+
+        void clear() {
+            data.clear();
+            durationSec = 1L;
+            invalidate();
+        }
+
+        void setDuration(long sec) {
+            durationSec = Math.max(1L, sec);
+            invalidate();
+        }
+
+        void refresh(ArrayList<EventRecord> source, long sec) {
+            data.clear();
+            data.addAll(source);
+            durationSec = Math.max(1L, sec);
+            invalidate();
+        }
+
+        @Override
+        protected void onDraw(Canvas c) {
+            super.onDraw(c);
+
+            float left = 26f;
+            float right = getWidth() - 26f;
+            float y = getHeight() * 0.58f;
+
+            p.setStrokeWidth(4f);
+            p.setColor(Color.rgb(185, 195, 205));
+            c.drawLine(left, y, right, y, p);
+
+            p.setTextSize(22f);
+            p.setColor(Color.DKGRAY);
+            c.drawText("0s", left, y + 32f, p);
+            c.drawText(durationSec + "s", Math.max(left, right - 70f), y + 32f, p);
+
+            for (EventRecord r : data) {
+                float x = left + (right - left)
+                        * Math.min(1f, r.offsetSec / (float) Math.max(1L, durationSec));
+
+                p.setColor(Color.rgb(205, 68, 72));
+                p.setStrokeWidth(5f);
+                c.drawLine(x, y - 32f, x, y + 8f, p);
+
+                p.setTextSize(20f);
+                c.drawText("#" + r.no, Math.max(2f, x - 14f), y - 40f, p);
+            }
+        }
+    }
+
+    static class UnitSummaryView extends View {
+        private final ArrayList<UnitAggregate> data = new ArrayList<>();
+        private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        UnitSummaryView(android.content.Context c, ArrayList<UnitAggregate> source) {
+            super(c);
+            data.addAll(source);
+            Collections.sort(data, (a, b) -> Double.compare(b.maxPeak, a.maxPeak));
+            setBackgroundColor(Color.WHITE);
+        }
+
+        @Override
+        protected void onDraw(Canvas c) {
+            super.onDraw(c);
+            if (data.isEmpty()) return;
+
+            float left = 18f;
+            float right = getWidth() - 18f;
+            float row = getHeight() / (float) data.size();
+
+            double max = 1.0;
+            for (UnitAggregate a : data) max = Math.max(max, a.maxPeak);
+
+            for (int i = 0; i < data.size(); i++) {
+                UnitAggregate a = data.get(i);
+                float y = i * row + 22f;
+
+                p.setColor(Color.DKGRAY);
+                p.setTextSize(22f);
+                c.drawText(a.label, left, y, p);
+
+                p.setTextSize(19f);
+                c.drawText(
+                        String.format(
+                                Locale.US,
+                                "MAX %.2f  ·  RMS %.2f  ·  %d events",
+                                a.maxPeak,
+                                a.avgRms(),
+                                a.count
+                        ),
+                        left,
+                        y + 24f,
+                        p
+                );
+
+                float barTop = y + 34f;
+                float barBottom = Math.min(getHeight() - 3f, barTop + 12f);
+                float barWidth = (float) ((right - left) * a.maxPeak / max);
+
+                p.setColor(Color.rgb(35, 105, 170));
+                c.drawRoundRect(left, barTop, left + barWidth, barBottom, 6f, 6f, p);
+            }
+        }
     }
 
     static class SessionBarsView extends View {
@@ -1404,6 +1673,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         ArrayList<Float> t = new ArrayList<>();
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         double spec = 2.0;
+        double fixedMax = 0.0;
 
         ShockGraph(android.content.Context c) {
             super(c);
@@ -1432,6 +1702,11 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             invalidate();
         }
 
+        void setScale(double value) {
+            fixedMax = Math.max(0.0, value);
+            invalidate();
+        }
+
         void line(Canvas c, ArrayList<Float> a, int col, float m) {
             if (a.size() < 2) return;
 
@@ -1456,9 +1731,14 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         protected void onDraw(Canvas c) {
             super.onDraw(c);
 
-            float m = (float) Math.max(3.0, spec * 1.5);
+            float m;
 
-            for (float q : t) m = Math.max(m, q * 1.15f);
+            if (fixedMax > 0.0) {
+                m = (float) fixedMax;
+            } else {
+                m = (float) Math.max(3.0, spec * 1.5);
+                for (float q : t) m = Math.max(m, q * 1.15f);
+            }
 
             p.setColor(Color.rgb(220, 225, 230));
             p.setStrokeWidth(1f);
