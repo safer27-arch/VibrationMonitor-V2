@@ -16,13 +16,13 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
     private TextView status, cam, elapsed, total, peak, rms, impact, dir, last;
     private Spinner process, unit;
+    private EditText lineInput, equipmentInput;
     private ShockGraph graph;
 
     private boolean running = false;
     private boolean calibrating = false;
     private boolean eventOn = false;
     private boolean gravityReady = false;
-
     private boolean cameraReady = false;
     private boolean cameraOpening = false;
 
@@ -35,6 +35,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     private long lastClosed = 0L;
 
     private int impactCount = 0;
+    private int thresholdCandidateCount = 0;
+
     private double sessionPeak = 0.0;
     private double sumSq = 0.0;
     private double sessionMaxX = 0.0;
@@ -47,8 +49,13 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
     private final ArrayDeque<P> pre = new ArrayDeque<>();
     private final ArrayList<P> event = new ArrayList<>();
+    private final ArrayList<EventRecord> sessionEvents = new ArrayList<>();
 
-    private String ep = "", eu = "", base = "";
+    private String eventLine = "";
+    private String eventEquipment = "";
+    private String ep = "";
+    private String eu = "";
+    private String base = "";
     private java.io.File photo = null;
 
     private android.hardware.camera2.CameraDevice camera;
@@ -89,14 +96,22 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         return b;
     }
 
+    private EditText input(String hint) {
+        EditText e = new EditText(this);
+        e.setHint(hint);
+        e.setTextSize(15);
+        e.setSingleLine(true);
+        e.setPadding(dp(10), dp(6), dp(10), dp(6));
+        return e;
+    }
+
     @Override
     public void onCreate(Bundle b) {
         super.onCreate(b);
 
         sm = (SensorManager) getSystemService(SENSOR_SERVICE);
         acc = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        spec = getSharedPreferences("VibrationSettings", MODE_PRIVATE)
-                .getFloat("spec", 2f);
+        spec = getSharedPreferences("VibrationSettings", MODE_PRIVATE).getFloat("spec", 2f);
 
         ScrollView sv = new ScrollView(this);
         LinearLayout root = new LinearLayout(this);
@@ -113,7 +128,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         TextView title = tv("PROCESS SHOCK\nPROFILER", 23, Color.WHITE);
         title.setTypeface(null, 1);
         h.addView(title);
-        h.addView(tv("CONTINUOUS EQUIPMENT IMPACT MONITORING", 12, Color.rgb(185, 207, 225)));
+        h.addView(tv("FIELD ANALYZER · CONTINUOUS IMPACT BLACKBOX", 12, Color.rgb(185, 207, 225)));
 
         status = tv("● READY", 15, Color.rgb(80, 220, 150));
         cam = tv("CAMERA : CHECKING...", 13, Color.rgb(185, 207, 225));
@@ -121,9 +136,21 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         h.addView(cam);
         root.addView(h);
 
-        TextView bb = tv("IMPACT BLACKBOX · PRE 3s + EVENT + POST 3s", 12, Color.rgb(70, 90, 105));
+        TextView bb = tv("PRE 3s + IMPACT + POST 3s · PHOTO · GRAPH · CSV · TELEGRAM", 11, Color.rgb(70, 90, 105));
         bb.setGravity(Gravity.CENTER);
         root.addView(bb);
+
+        android.content.SharedPreferences cp = getSharedPreferences("ShockContext", MODE_PRIVATE);
+
+        root.addView(tv("LINE", 12, Color.DKGRAY));
+        lineInput = input("예: Line 1");
+        lineInput.setText(cp.getString("line", ""));
+        root.addView(lineInput);
+
+        root.addView(tv("EQUIPMENT", 12, Color.DKGRAY));
+        equipmentInput = input("예: Stacker #1");
+        equipmentInput.setText(cp.getString("equipment", ""));
+        root.addView(equipmentInput);
 
         root.addView(tv("PROCESS", 13, Color.DKGRAY));
         process = new Spinner(this);
@@ -198,7 +225,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         root.addView(dir);
 
         last = tv(
-                "LAST IMPACT : -\n충격 시 사진 · 전후 트렌드 · CSV · 요약정보를 자동 저장합니다.",
+                "LAST IMPACT : -\n이벤트 발생 시 사진 · 전후 트렌드 · CSV · 요약을 자동 저장합니다.",
                 13,
                 Color.rgb(70, 90, 105)
         );
@@ -239,11 +266,20 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 {"Tray Loading", "Tray Unloading", "Conveyor", "Lift / Transfer"}
         };
 
+        String old = unit.getSelectedItem() == null ? "" : String.valueOf(unit.getSelectedItem());
+
         unit.setAdapter(new ArrayAdapter<String>(
                 this,
                 android.R.layout.simple_spinner_dropdown_item,
                 u[Math.max(0, Math.min(2, p))]
         ));
+
+        for (int i = 0; i < unit.getCount(); i++) {
+            if (old.equals(String.valueOf(unit.getItemAtPosition(i)))) {
+                unit.setSelection(i);
+                break;
+            }
+        }
     }
 
     private void startMon() {
@@ -251,6 +287,11 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             Toast.makeText(this, "가속도 센서가 없습니다.", Toast.LENGTH_LONG).show();
             return;
         }
+
+        getSharedPreferences("ShockContext", MODE_PRIVATE).edit()
+                .putString("line", lineInput.getText().toString().trim())
+                .putString("equipment", equipmentInput.getText().toString().trim())
+                .apply();
 
         running = true;
         calibrating = true;
@@ -266,9 +307,11 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         sessionMaxY = 0.0;
         sessionMaxZ = 0.0;
         impactCount = 0;
+        thresholdCandidateCount = 0;
 
         pre.clear();
         event.clear();
+        sessionEvents.clear();
         graph.clear();
 
         elapsed.setText("CALIBRATING 2.0s");
@@ -277,14 +320,14 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         rms.setText("RMS\n0.000");
         impact.setText("IMPACT\n0");
         dir.setText("MAIN DIRECTION : -");
+        last.setText("LAST IMPACT : -\n측정 중 공정/UNIT을 변경해도 이벤트별로 자동 태깅합니다.");
 
         status.setText("● SENSOR CALIBRATION");
         status.setTextColor(Color.rgb(255, 185, 70));
 
-        process.setEnabled(false);
-        unit.setEnabled(false);
-
         if (!cameraReady) setupCamera();
+
+        startKeepAliveService();
 
         sm.unregisterListener(this);
         sm.registerListener(this, acc, SensorManager.SENSOR_DELAY_GAME);
@@ -298,14 +341,27 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         running = false;
         calibrating = false;
         sm.unregisterListener(this);
+        stopService(new android.content.Intent(this, ProcessShockKeepAliveService.class));
 
         status.setText("● STOPPED / ANALYSIS READY");
         status.setTextColor(Color.rgb(255, 185, 70));
 
-        process.setEnabled(true);
-        unit.setEnabled(true);
-
+        saveSessionCsv();
         showSessionSummary();
+    }
+
+    private void startKeepAliveService() {
+        android.content.Intent i = new android.content.Intent(this, ProcessShockKeepAliveService.class);
+
+        try {
+            if (Build.VERSION.SDK_INT >= 26) {
+                startForegroundService(i);
+            } else {
+                startService(i);
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Background monitor 시작 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -354,14 +410,10 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
                 elapsed.setText("00:00:00");
                 total.setText("0.000 m/s²");
-                status.setText("● MONITORING");
+                status.setText("● MONITORING · BACKGROUND READY");
                 status.setTextColor(Color.rgb(80, 220, 150));
 
-                Toast.makeText(
-                        this,
-                        "센서 안정화 완료 · 충격 감시 시작",
-                        Toast.LENGTH_SHORT
-                ).show();
+                Toast.makeText(this, "센서 안정화 완료 · 충격 감시 시작", Toast.LENGTH_SHORT).show();
             }
             return;
         }
@@ -380,8 +432,19 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         sessionMaxY = Math.max(sessionMaxY, Math.abs(y));
         sessionMaxZ = Math.max(sessionMaxZ, Math.abs(z));
 
-        if (!eventOn && t >= spec && now - lastClosed >= 1000L) {
-            beginEvent(now);
+        if (!eventOn) {
+            if (t >= spec * 1.5) {
+                thresholdCandidateCount = 2;
+            } else if (t >= spec) {
+                thresholdCandidateCount++;
+            } else if (t < spec * 0.8) {
+                thresholdCandidateCount = 0;
+            }
+
+            if (thresholdCandidateCount >= 2 && now - lastClosed >= 1000L) {
+                thresholdCandidateCount = 0;
+                beginEvent(now);
+            }
         }
 
         if (eventOn) {
@@ -389,7 +452,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 event.add(p);
             }
 
-            if (t >= spec) {
+            if (t >= spec * 0.8) {
                 lastAbove = now;
             }
 
@@ -415,11 +478,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
             total.setText(String.format(Locale.US, "%.3f m/s²", t));
             peak.setText(String.format(Locale.US, "PEAK\n%.3f", sessionPeak));
-            rms.setText(String.format(
-                    Locale.US,
-                    "RMS\n%.3f",
-                    Math.sqrt(sumSq / Math.max(1L, n))
-            ));
+            rms.setText(String.format(Locale.US, "RMS\n%.3f", Math.sqrt(sumSq / Math.max(1L, n))));
             impact.setText("IMPACT\n" + impactCount);
 
             float ax = Math.abs(x);
@@ -440,6 +499,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         lastAbove = now;
         impactCount++;
 
+        eventLine = lineInput.getText().toString().trim();
+        eventEquipment = equipmentInput.getText().toString().trim();
         ep = String.valueOf(process.getSelectedItem());
         eu = String.valueOf(unit.getSelectedItem());
 
@@ -447,10 +508,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 Locale.US,
                 "IMPACT_%03d_%s",
                 impactCount,
-                new java.text.SimpleDateFormat(
-                        "yyyyMMdd_HHmmss_SSS",
-                        Locale.US
-                ).format(new java.util.Date())
+                new java.text.SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(new java.util.Date())
         );
 
         event.clear();
@@ -468,6 +526,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         if (!eventOn) return;
 
         final int no = impactCount;
+        final String ln = eventLine;
+        final String eq = eventEquipment;
         final String pp = ep;
         final String uu = eu;
         final String bn = base;
@@ -482,101 +542,59 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         final Stats st = stats(d, es, la);
 
+        EventRecord record = new EventRecord();
+        record.no = no;
+        record.timeMs = System.currentTimeMillis();
+        record.line = ln;
+        record.equipment = eq;
+        record.process = pp;
+        record.unit = uu;
+        record.peak = st.pk;
+        record.rms = st.rms;
+        record.duration = st.dur;
+        record.axis = st.axis;
+        record.mx = st.mx;
+        record.my = st.my;
+        record.mz = st.mz;
+        record.base = bn;
+        sessionEvents.add(record);
+
         last.setText(String.format(
                 Locale.US,
                 "LAST IMPACT #%03d · %s > %s\nPEAK %.3f | RMS %.3f | %.2fs | %s AXIS\n사진 · 그래프 · CSV · 요약 저장 중...",
-                no,
-                pp,
-                uu,
-                st.pk,
-                st.rms,
-                st.dur,
-                st.axis
+                no, pp, uu, st.pk, st.rms, st.dur, st.axis
         ));
 
         if (running && !calibrating) {
-            status.setText("● MONITORING");
+            status.setText("● MONITORING · BACKGROUND READY");
             status.setTextColor(Color.rgb(80, 220, 150));
         }
 
-        new Thread(() -> saveEvent(no, pp, uu, bn, ph, d, st)).start();
+        new Thread(() -> saveEvent(no, ln, eq, pp, uu, bn, ph, d, st)).start();
     }
 
     private Stats stats(ArrayList<P> d, long es, long la) {
         Stats s = new Stats();
-
         double q = 0.0;
-        double mx = 0.0;
-        double my = 0.0;
-        double mz = 0.0;
 
         for (P p : d) {
             s.pk = Math.max(s.pk, p.t);
             q += p.t * p.t;
-            mx = Math.max(mx, Math.abs(p.x));
-            my = Math.max(my, Math.abs(p.y));
-            mz = Math.max(mz, Math.abs(p.z));
+            s.mx = Math.max(s.mx, Math.abs(p.x));
+            s.my = Math.max(s.my, Math.abs(p.y));
+            s.mz = Math.max(s.mz, Math.abs(p.z));
         }
 
         s.rms = d.isEmpty() ? 0.0 : Math.sqrt(q / d.size());
         s.dur = Math.max(0.0, (la - es) / 1000.0);
-        s.mx = mx;
-        s.my = my;
-        s.mz = mz;
-        s.axis = mx >= my && mx >= mz ? "X" : (my >= mz ? "Y" : "Z");
-
+        s.axis = s.mx >= s.my && s.mx >= s.mz ? "X" : (s.my >= s.mz ? "Y" : "Z");
         return s;
-    }
-
-    private void showSessionSummary() {
-        long now = SystemClock.elapsedRealtime();
-        long durationSec = startMs > 0L ? Math.max(0L, (now - startMs) / 1000L) : 0L;
-        double sessionRms = n > 0L ? Math.sqrt(sumSq / n) : 0.0;
-
-        String mainAxis =
-                sessionMaxX >= sessionMaxY && sessionMaxX >= sessionMaxZ
-                        ? "X"
-                        : (sessionMaxY >= sessionMaxZ ? "Y" : "Z");
-
-        String pp = String.valueOf(process.getSelectedItem());
-        String uu = String.valueOf(unit.getSelectedItem());
-
-        String summary = String.format(
-                Locale.US,
-                "PROCESS : %s\n"
-                        + "UNIT / ACTION : %s\n\n"
-                        + "측정시간 : %02d:%02d:%02d\n"
-                        + "Impact : %d회\n"
-                        + "최대 Peak : %.3f m/s²\n"
-                        + "Session RMS : %.3f m/s²\n"
-                        + "주 충격 방향 : %s AXIS\n"
-                        + "X / Y / Z Peak : %.3f / %.3f / %.3f m/s²\n"
-                        + "SPEC : %.3f m/s²\n\n"
-                        + "충격 이벤트는 ShockEvents 폴더에\n사진 · 그래프 · CSV · 요약으로 저장됩니다.",
-                pp,
-                uu,
-                durationSec / 3600,
-                (durationSec / 60) % 60,
-                durationSec % 60,
-                impactCount,
-                sessionPeak,
-                sessionRms,
-                mainAxis,
-                sessionMaxX,
-                sessionMaxY,
-                sessionMaxZ,
-                spec
-        );
-
-        new android.app.AlertDialog.Builder(this)
-                .setTitle("SESSION SUMMARY")
-                .setMessage(summary)
-                .setPositiveButton("확인", null)
-                .show();
     }
 
     private void saveEvent(
             int no,
+            String ln,
+            String eq,
             String pp,
             String uu,
             String bn,
@@ -589,46 +607,26 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         java.io.File png = new java.io.File(dir, bn + "_graph.png");
         java.io.File txt = new java.io.File(dir, bn + "_summary.txt");
 
-        writeCsv(csv, pp, uu, d);
+        writeCsv(csv, ln, eq, pp, uu, d);
         writeGraph(png, d);
-        writeSummary(txt, no, pp, uu, ph, png, csv, st);
+        writeSummary(txt, no, ln, eq, pp, uu, ph, png, csv, st);
 
-        android.content.SharedPreferences sp =
-                getSharedPreferences("TelegramSettings", MODE_PRIVATE);
-
+        android.content.SharedPreferences sp = getSharedPreferences("TelegramSettings", MODE_PRIVATE);
         String token = sp.getString("bot_token", "");
         String ids = sp.getString("chat_id", "");
 
         String cap = String.format(
                 Locale.US,
                 "⚡ PROCESS SHOCK IMPACT #%03d\n"
-                        + "Process : %s\n"
-                        + "Unit / Action : %s\n"
-                        + "PEAK : %.3f m/s²\n"
-                        + "RMS : %.3f m/s²\n"
-                        + "Duration : %.2f s\n"
-                        + "Main Direction : %s\n"
-                        + "X/Y/Z Peak : %.3f / %.3f / %.3f m/s²\n"
-                        + "SPEC : %.3f m/s²\n"
-                        + "Attached : photo + trend graph + CSV",
-                no,
-                pp,
-                uu,
-                st.pk,
-                st.rms,
-                st.dur,
-                st.axis,
-                st.mx,
-                st.my,
-                st.mz,
-                spec
+                        + "Line : %s\nEquipment : %s\nProcess : %s\nUnit / Action : %s\n"
+                        + "PEAK : %.3f m/s²\nRMS : %.3f m/s²\nDuration : %.2f s\n"
+                        + "Main Direction : %s\nX/Y/Z Peak : %.3f / %.3f / %.3f m/s²\n"
+                        + "SPEC : %.3f m/s²\nAttached : photo + trend graph + CSV",
+                no, blank(ln), blank(eq), pp, uu,
+                st.pk, st.rms, st.dur, st.axis, st.mx, st.my, st.mz, spec
         );
 
-        if (token != null
-                && ids != null
-                && !token.trim().isEmpty()
-                && !ids.trim().isEmpty()) {
-
+        if (token != null && ids != null && !token.trim().isEmpty() && !ids.trim().isEmpty()) {
             TelegramSender.sendEventBundleMulti(
                     token.trim(),
                     ids.trim(),
@@ -637,86 +635,60 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                     png,
                     csv,
                     (ok, msg) -> runOnUiThread(() ->
-                            last.append(
-                                    ok
-                                            ? "\nTelegram : SENT"
-                                            : "\nTelegram : FAILED (" + msg + ")"
-                            )
+                            last.append(ok ? "\nTelegram : SENT" : "\nTelegram : FAILED (" + msg + ")")
                     )
             );
         } else {
-            runOnUiThread(() ->
-                    last.append("\nTelegram : 설정 없음 · Local 저장 완료")
-            );
+            runOnUiThread(() -> last.append("\nTelegram : 설정 없음 · Local 저장 완료"));
         }
 
         runOnUiThread(() ->
-                Toast.makeText(
-                        this,
-                        "Impact #" + no + " 블랙박스 저장 완료",
-                        Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(this, "Impact #" + no + " 블랙박스 저장 완료", Toast.LENGTH_SHORT).show()
         );
     }
 
+    private String blank(String s) {
+        return s == null || s.trim().isEmpty() ? "-" : s.trim();
+    }
+
     private java.io.File eventDir() {
-        java.io.File d = new java.io.File(
-                getExternalFilesDir(null),
-                "ShockEvents"
-        );
-
-        if (!d.exists()) {
-            d.mkdirs();
-        }
-
+        java.io.File d = new java.io.File(getExternalFilesDir(null), "ShockEvents");
+        if (!d.exists()) d.mkdirs();
         return d;
     }
 
     private String safe(String s) {
-        return s == null
-                ? ""
-                : s.replace(",", " ")
-                   .replace("\n", " ")
-                   .replace("\r", " ");
+        return s == null ? "" : s.replace(",", " ").replace("\n", " ").replace("\r", " ");
     }
 
     private void writeCsv(
             java.io.File f,
+            String ln,
+            String eq,
             String pp,
             String uu,
             ArrayList<P> d
     ) {
-        try (java.io.PrintWriter o =
-                     new java.io.PrintWriter(
-                             new java.io.OutputStreamWriter(
-                                     new java.io.FileOutputStream(f),
-                                     java.nio.charset.StandardCharsets.UTF_8
-                             )
-                     )) {
-
-            o.println("DateTime,ElapsedMs,Process,UnitAction,X,Y,Z,Total,Spec");
-
+        try (java.io.PrintWriter o = new java.io.PrintWriter(
+                new java.io.OutputStreamWriter(
+                        new java.io.FileOutputStream(f),
+                        java.nio.charset.StandardCharsets.UTF_8
+                )
+        )) {
+            o.println("DateTime,ElapsedMs,Line,Equipment,Process,UnitAction,X,Y,Z,Total,Spec");
             java.text.SimpleDateFormat fmt =
-                    new java.text.SimpleDateFormat(
-                            "yyyy-MM-dd HH:mm:ss.SSS",
-                            Locale.US
-                    );
+                    new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US);
 
             long zero = d.isEmpty() ? 0L : d.get(0).mono;
 
             for (P p : d) {
                 o.println(String.format(
                         Locale.US,
-                        "%s,%d,%s,%s,%.6f,%.6f,%.6f,%.6f,%.6f",
+                        "%s,%d,%s,%s,%s,%s,%.6f,%.6f,%.6f,%.6f,%.6f",
                         fmt.format(new java.util.Date(p.wall)),
                         p.mono - zero,
-                        safe(pp),
-                        safe(uu),
-                        p.x,
-                        p.y,
-                        p.z,
-                        p.t,
-                        spec
+                        safe(ln), safe(eq), safe(pp), safe(uu),
+                        p.x, p.y, p.z, p.t, spec
                 ));
             }
         } catch (Exception ignored) {}
@@ -725,6 +697,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     private void writeSummary(
             java.io.File f,
             int no,
+            String ln,
+            String eq,
             String pp,
             String uu,
             java.io.File ph,
@@ -732,64 +706,40 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             java.io.File csv,
             Stats s
     ) {
-        try (java.io.PrintWriter o =
-                     new java.io.PrintWriter(
-                             new java.io.OutputStreamWriter(
-                                     new java.io.FileOutputStream(f),
-                                     java.nio.charset.StandardCharsets.UTF_8
-                             )
-                     )) {
-
+        try (java.io.PrintWriter o = new java.io.PrintWriter(
+                new java.io.OutputStreamWriter(
+                        new java.io.FileOutputStream(f),
+                        java.nio.charset.StandardCharsets.UTF_8
+                )
+        )) {
             o.println("PROCESS SHOCK EVENT #" + String.format(Locale.US, "%03d", no));
             o.println("Time : " + new java.text.SimpleDateFormat(
-                    "yyyy-MM-dd HH:mm:ss",
-                    Locale.US
+                    "yyyy-MM-dd HH:mm:ss", Locale.US
             ).format(new java.util.Date()));
-
+            o.println("Line : " + blank(ln));
+            o.println("Equipment : " + blank(eq));
             o.println("Process : " + pp);
             o.println("Unit / Action : " + uu);
-
             o.println(String.format(
                     Locale.US,
-                    "Peak : %.3f m/s²\n"
-                            + "RMS : %.3f m/s²\n"
-                            + "Impact Duration : %.2f sec\n"
-                            + "Main Direction : %s AXIS\n"
-                            + "X / Y / Z Peak : %.3f / %.3f / %.3f m/s²\n"
-                            + "SPEC : %.3f m/s²",
-                    s.pk,
-                    s.rms,
-                    s.dur,
-                    s.axis,
-                    s.mx,
-                    s.my,
-                    s.mz,
-                    spec
+                    "Peak : %.3f m/s²\nRMS : %.3f m/s²\nImpact Duration : %.2f sec\n"
+                            + "Main Direction : %s AXIS\nX / Y / Z Peak : %.3f / %.3f / %.3f m/s²\nSPEC : %.3f m/s²",
+                    s.pk, s.rms, s.dur, s.axis, s.mx, s.my, s.mz, spec
             ));
-
             o.println("Photo : " + (ph == null ? "-" : ph.getName()));
             o.println("Graph : " + png.getName());
             o.println("CSV : " + csv.getName());
             o.println("Window : PRE 3 sec + IMPACT + POST 3 sec");
-
         } catch (Exception ignored) {}
     }
 
-    private void writeGraph(
-            java.io.File f,
-            ArrayList<P> d
-    ) {
+    private void writeGraph(java.io.File f, ArrayList<P> d) {
         if (d.size() < 2) return;
 
         try {
             int W = 1200, H = 700, L = 90, R = 1160, T = 60, B = 610;
 
-            Bitmap bm = Bitmap.createBitmap(
-                    W,
-                    H,
-                    Bitmap.Config.ARGB_8888
-            );
-
+            Bitmap bm = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
             Canvas c = new Canvas(bm);
             c.drawColor(Color.WHITE);
 
@@ -821,13 +771,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             for (P p : d) {
                 m = Math.max(
                         m,
-                        Math.max(
-                                p.t,
-                                Math.max(
-                                        Math.abs(p.x),
-                                        Math.max(Math.abs(p.y), Math.abs(p.z))
-                                )
-                        ) * 1.15
+                        Math.max(p.t, Math.max(Math.abs(p.x), Math.max(Math.abs(p.y), Math.abs(p.z)))) * 1.15
                 );
             }
 
@@ -848,38 +792,132 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
             for (int i = 0; i < d.size(); i++) {
                 P p = d.get(i);
-                double[] vv = {
-                        Math.abs(p.x),
-                        Math.abs(p.y),
-                        Math.abs(p.z),
-                        p.t
-                };
-
+                double[] vv = {Math.abs(p.x), Math.abs(p.y), Math.abs(p.z), p.t};
                 float x = L + (R - L) * (i / (float) (d.size() - 1));
 
                 for (int k = 0; k < 4; k++) {
                     float y = B - (float) (vv[k] / m * (B - T));
-
-                    if (i == 0) {
-                        path[k].moveTo(x, y);
-                    } else {
-                        path[k].lineTo(x, y);
-                    }
+                    if (i == 0) path[k].moveTo(x, y);
+                    else path[k].lineTo(x, y);
                 }
             }
 
-            for (int k = 0; k < 4; k++) {
-                c.drawPath(path[k], ps[k]);
-            }
+            for (int k = 0; k < 4; k++) c.drawPath(path[k], ps[k]);
 
-            try (java.io.FileOutputStream o =
-                         new java.io.FileOutputStream(f)) {
+            try (java.io.FileOutputStream o = new java.io.FileOutputStream(f)) {
                 bm.compress(Bitmap.CompressFormat.PNG, 100, o);
             }
 
             bm.recycle();
-
         } catch (Exception ignored) {}
+    }
+
+    private void saveSessionCsv() {
+        if (sessionEvents.isEmpty()) return;
+
+        String stamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
+                .format(new java.util.Date());
+
+        java.io.File f = new java.io.File(eventDir(), "SESSION_" + stamp + ".csv");
+
+        try (java.io.PrintWriter o = new java.io.PrintWriter(
+                new java.io.OutputStreamWriter(
+                        new java.io.FileOutputStream(f),
+                        java.nio.charset.StandardCharsets.UTF_8
+                )
+        )) {
+            o.println("Event,Time,Line,Equipment,Process,UnitAction,Peak,RMS,DurationSec,Axis,XPeak,YPeak,ZPeak,Spec");
+
+            java.text.SimpleDateFormat fmt =
+                    new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
+
+            for (EventRecord r : sessionEvents) {
+                o.println(String.format(
+                        Locale.US,
+                        "%d,%s,%s,%s,%s,%s,%.6f,%.6f,%.3f,%s,%.6f,%.6f,%.6f,%.6f",
+                        r.no,
+                        fmt.format(new java.util.Date(r.timeMs)),
+                        safe(r.line), safe(r.equipment), safe(r.process), safe(r.unit),
+                        r.peak, r.rms, r.duration, r.axis, r.mx, r.my, r.mz, spec
+                ));
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void showSessionSummary() {
+        long now = SystemClock.elapsedRealtime();
+        long durationSec = startMs > 0L ? Math.max(0L, (now - startMs) / 1000L) : 0L;
+        double sessionRms = n > 0L ? Math.sqrt(sumSq / n) : 0.0;
+
+        String mainAxis =
+                sessionMaxX >= sessionMaxY && sessionMaxX >= sessionMaxZ
+                        ? "X"
+                        : (sessionMaxY >= sessionMaxZ ? "Y" : "Z");
+
+        EventRecord top = null;
+        for (EventRecord r : sessionEvents) {
+            if (top == null || r.peak > top.peak) top = r;
+        }
+
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(18), dp(8), dp(18), dp(8));
+
+        TextView topCard = tv(
+                top == null
+                        ? "TOP IMPACT : 없음"
+                        : String.format(
+                                Locale.US,
+                                "TOP IMPACT #%03d\n%s > %s\nPEAK %.3f m/s² · %s AXIS",
+                                top.no, top.process, top.unit, top.peak, top.axis
+                        ),
+                16,
+                Color.rgb(15, 38, 61)
+        );
+        topCard.setTypeface(null, 1);
+        topCard.setBackground(bg(Color.rgb(238, 243, 248), 12));
+        box.addView(topCard);
+
+        String summary = String.format(
+                Locale.US,
+                "측정시간  %02d:%02d:%02d\n"
+                        + "Impact  %d회\n"
+                        + "최대 Peak  %.3f m/s²\n"
+                        + "Session RMS  %.3f m/s²\n"
+                        + "주 충격 방향  %s AXIS\n"
+                        + "X / Y / Z Peak  %.3f / %.3f / %.3f m/s²\n"
+                        + "SPEC  %.3f m/s²",
+                durationSec / 3600,
+                (durationSec / 60) % 60,
+                durationSec % 60,
+                impactCount,
+                sessionPeak,
+                sessionRms,
+                mainAxis,
+                sessionMaxX,
+                sessionMaxY,
+                sessionMaxZ,
+                spec
+        );
+
+        box.addView(tv(summary, 15, Color.DKGRAY));
+
+        if (!sessionEvents.isEmpty()) {
+            TextView chartTitle = tv("UNIT / EVENT PEAK COMPARISON", 13, Color.rgb(15, 38, 61));
+            chartTitle.setTypeface(null, 1);
+            box.addView(chartTitle);
+            box.addView(new SessionBarsView(this, sessionEvents),
+                    new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(220)));
+        }
+
+        ScrollView sv = new ScrollView(this);
+        sv.addView(box);
+
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("SESSION SUMMARY")
+                .setView(sv)
+                .setPositiveButton("확인", null)
+                .show();
     }
 
     private void showHistory() {
@@ -896,51 +934,115 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             return;
         }
 
-        Arrays.sort(files, (a, b) ->
-                Long.compare(b.lastModified(), a.lastModified())
-        );
+        Arrays.sort(files, (a, b) -> Long.compare(b.lastModified(), a.lastModified()));
 
         String[] names = new String[files.length];
 
         for (int i = 0; i < files.length; i++) {
-            names[i] = files[i].getName().replace("_summary.txt", "");
+            names[i] = historyLabel(files[i]);
         }
 
         final java.io.File[] list = files;
 
         new android.app.AlertDialog.Builder(this)
                 .setTitle("IMPACT EVENT HISTORY")
-                .setItems(names, (dialog, which) -> showSummaryFile(list[which]))
+                .setItems(names, (dialog, which) -> showDetailedHistory(list[which]))
                 .setNegativeButton("닫기", null)
                 .show();
     }
 
-    private void showSummaryFile(java.io.File file) {
-        StringBuilder sb = new StringBuilder();
+    private String historyLabel(java.io.File file) {
+        String processName = "-";
+        String unitName = "-";
+        String peakValue = "-";
 
-        try (java.io.BufferedReader br =
-                     new java.io.BufferedReader(
-                             new java.io.InputStreamReader(
-                                     new java.io.FileInputStream(file),
-                                     java.nio.charset.StandardCharsets.UTF_8
-                             )
-                     )) {
-
+        try (java.io.BufferedReader br = new java.io.BufferedReader(
+                new java.io.InputStreamReader(
+                        new java.io.FileInputStream(file),
+                        java.nio.charset.StandardCharsets.UTF_8
+                )
+        )) {
             String line;
 
             while ((line = br.readLine()) != null) {
-                sb.append(line).append('\n');
+                if (line.startsWith("Process : ")) processName = line.substring(10).trim();
+                else if (line.startsWith("Unit / Action : ")) unitName = line.substring(16).trim();
+                else if (line.startsWith("Peak : ")) peakValue = line.substring(7).trim();
             }
+        } catch (Exception ignored) {}
 
+        String time = new java.text.SimpleDateFormat("MM-dd HH:mm:ss", Locale.US)
+                .format(new java.util.Date(file.lastModified()));
+
+        return time + " · " + processName + " · " + unitName + "\nPeak " + peakValue;
+    }
+
+    private void showDetailedHistory(java.io.File summaryFile) {
+        String name = summaryFile.getName();
+        String baseName = name.replace("_summary.txt", "");
+
+        java.io.File dir = summaryFile.getParentFile();
+        java.io.File photoFile = new java.io.File(dir, baseName + ".jpg");
+        java.io.File graphFile = new java.io.File(dir, baseName + "_graph.png");
+
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(10), dp(8), dp(10), dp(8));
+
+        if (photoFile.exists() && photoFile.length() > 0) {
+            ImageView image = new ImageView(this);
+            image.setAdjustViewBounds(true);
+            image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            image.setImageBitmap(BitmapFactory.decodeFile(photoFile.getAbsolutePath()));
+            box.addView(image, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    dp(220)
+            ));
+        }
+
+        if (graphFile.exists() && graphFile.length() > 0) {
+            TextView gt = tv("IMPACT TREND", 13, Color.rgb(15, 38, 61));
+            gt.setTypeface(null, 1);
+            box.addView(gt);
+
+            ImageView image = new ImageView(this);
+            image.setAdjustViewBounds(true);
+            image.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            image.setImageBitmap(BitmapFactory.decodeFile(graphFile.getAbsolutePath()));
+            box.addView(image, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    dp(220)
+            ));
+        }
+
+        box.addView(tv(readText(summaryFile), 14, Color.DKGRAY));
+
+        ScrollView sv = new ScrollView(this);
+        sv.addView(box);
+
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("IMPACT DETAIL")
+                .setView(sv)
+                .setPositiveButton("닫기", null)
+                .show();
+    }
+
+    private String readText(java.io.File file) {
+        StringBuilder sb = new StringBuilder();
+
+        try (java.io.BufferedReader br = new java.io.BufferedReader(
+                new java.io.InputStreamReader(
+                        new java.io.FileInputStream(file),
+                        java.nio.charset.StandardCharsets.UTF_8
+                )
+        )) {
+            String line;
+            while ((line = br.readLine()) != null) sb.append(line).append('\n');
         } catch (Exception e) {
             sb.append("읽기 오류 : ").append(e.getMessage());
         }
 
-        new android.app.AlertDialog.Builder(this)
-                .setTitle("IMPACT DETAIL")
-                .setMessage(sb.toString())
-                .setPositiveButton("닫기", null)
-                .show();
+        return sb.toString();
     }
 
     private void setupCamera() {
@@ -949,11 +1051,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 != android.content.pm.PackageManager.PERMISSION_GRANTED) {
 
             cam.setText("CAMERA : PERMISSION REQUIRED");
-
-            requestPermissions(
-                    new String[]{android.Manifest.permission.CAMERA},
-                    2202
-            );
+            requestPermissions(new String[]{android.Manifest.permission.CAMERA}, 2202);
             return;
         }
 
@@ -965,10 +1063,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         camThread = new android.os.HandlerThread("ShockCamera");
         camThread.start();
-
-        camHandler = new android.os.Handler(
-                camThread.getLooper()
-        );
+        camHandler = new android.os.Handler(camThread.getLooper());
     }
 
     private void openCamera() {
@@ -979,19 +1074,16 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         try {
             android.hardware.camera2.CameraManager m =
-                    (android.hardware.camera2.CameraManager)
-                            getSystemService(CAMERA_SERVICE);
+                    (android.hardware.camera2.CameraManager) getSystemService(CAMERA_SERVICE);
 
             cameraId = null;
 
             for (String id : m.getCameraIdList()) {
-                Integer face =
-                        m.getCameraCharacteristics(id)
-                         .get(android.hardware.camera2.CameraCharacteristics.LENS_FACING);
+                Integer face = m.getCameraCharacteristics(id)
+                        .get(android.hardware.camera2.CameraCharacteristics.LENS_FACING);
 
                 if (face != null
-                        && face ==
-                        android.hardware.camera2.CameraCharacteristics.LENS_FACING_BACK) {
+                        && face == android.hardware.camera2.CameraCharacteristics.LENS_FACING_BACK) {
                     cameraId = id;
                     break;
                 }
@@ -1004,10 +1096,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             }
 
             reader = android.media.ImageReader.newInstance(
-                    1280,
-                    720,
-                    android.graphics.ImageFormat.JPEG,
-                    2
+                    1280, 720, android.graphics.ImageFormat.JPEG, 2
             );
 
             reader.setOnImageAvailableListener(
@@ -1020,30 +1109,21 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
                             if (im == null || f == null) return;
 
-                            java.nio.ByteBuffer b =
-                                    im.getPlanes()[0].getBuffer();
-
-                            byte[] bytes =
-                                    new byte[b.remaining()];
-
+                            java.nio.ByteBuffer b = im.getPlanes()[0].getBuffer();
+                            byte[] bytes = new byte[b.remaining()];
                             b.get(bytes);
 
-                            try (java.io.FileOutputStream o =
-                                         new java.io.FileOutputStream(f)) {
+                            try (java.io.FileOutputStream o = new java.io.FileOutputStream(f)) {
                                 o.write(bytes);
                             }
 
                             photoTarget = null;
 
-                            runOnUiThread(() ->
-                                    cam.setText("CAMERA : READY · EVENT PHOTO SAVED")
-                            );
+                            runOnUiThread(() -> cam.setText("CAMERA : READY · EVENT PHOTO SAVED"));
 
                         } catch (Exception ignored) {
                         } finally {
-                            if (im != null) {
-                                im.close();
-                            }
+                            if (im != null) im.close();
                         }
                     },
                     camHandler
@@ -1059,16 +1139,12 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             m.openCamera(
                     cameraId,
                     new android.hardware.camera2.CameraDevice.StateCallback() {
-
                         @Override
                         public void onOpened(android.hardware.camera2.CameraDevice c) {
                             camera = c;
                             cameraReady = true;
                             cameraOpening = false;
-
-                            runOnUiThread(() ->
-                                    cam.setText("CAMERA : READY")
-                            );
+                            runOnUiThread(() -> cam.setText("CAMERA : READY"));
                         }
 
                         @Override
@@ -1085,10 +1161,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                             camera = null;
                             cameraReady = false;
                             cameraOpening = false;
-
-                            runOnUiThread(() ->
-                                    cam.setText("CAMERA : ERROR " + e)
-                            );
+                            runOnUiThread(() -> cam.setText("CAMERA : ERROR " + e));
                         }
                     },
                     camHandler
@@ -1110,20 +1183,15 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         photoTarget = f;
 
         try {
-            if (session != null) {
-                session.close();
-            }
+            if (session != null) session.close();
 
             android.view.Surface s = reader.getSurface();
 
             camera.createCaptureSession(
                     java.util.Collections.singletonList(s),
                     new android.hardware.camera2.CameraCaptureSession.StateCallback() {
-
                         @Override
-                        public void onConfigured(
-                                android.hardware.camera2.CameraCaptureSession ss
-                        ) {
+                        public void onConfigured(android.hardware.camera2.CameraCaptureSession ss) {
                             session = ss;
 
                             try {
@@ -1133,12 +1201,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                                         );
 
                                 b.addTarget(s);
-
-                                ss.capture(
-                                        b.build(),
-                                        null,
-                                        camHandler
-                                );
+                                ss.capture(b.build(), null, camHandler);
 
                             } catch (Exception e) {
                                 photoTarget = null;
@@ -1146,9 +1209,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                         }
 
                         @Override
-                        public void onConfigureFailed(
-                                android.hardware.camera2.CameraCaptureSession ss
-                        ) {
+                        public void onConfigureFailed(android.hardware.camera2.CameraCaptureSession ss) {
                             photoTarget = null;
                         }
                     },
@@ -1164,19 +1225,13 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         cameraReady = false;
         cameraOpening = false;
 
-        try {
-            if (session != null) session.close();
-        } catch (Exception ignored) {}
+        try { if (session != null) session.close(); } catch (Exception ignored) {}
         session = null;
 
-        try {
-            if (camera != null) camera.close();
-        } catch (Exception ignored) {}
+        try { if (camera != null) camera.close(); } catch (Exception ignored) {}
         camera = null;
 
-        try {
-            if (reader != null) reader.close();
-        } catch (Exception ignored) {}
+        try { if (reader != null) reader.close(); } catch (Exception ignored) {}
         reader = null;
 
         if (camThread != null) {
@@ -1187,17 +1242,12 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     }
 
     @Override
-    public void onRequestPermissionsResult(
-            int r,
-            String[] p,
-            int[] g
-    ) {
+    public void onRequestPermissionsResult(int r, String[] p, int[] g) {
         super.onRequestPermissionsResult(r, p, g);
 
         if (r == 2202) {
             if (g.length > 0
-                    && g[0]
-                    == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    && g[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
                 openCamera();
             } else {
                 cam.setText("CAMERA : PERMISSION DENIED");
@@ -1211,12 +1261,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     @Override
     protected void onPause() {
         super.onPause();
-
-        if (running) {
-            sm.unregisterListener(this);
-        }
-
-        closeCamera();
+        // Keep the sensor listener alive while measurement is running.
+        // The foreground service keeps the process awake for screen-off/background monitoring.
     }
 
     @Override
@@ -1224,28 +1270,39 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         super.onResume();
 
         if (running && acc != null) {
-            sm.registerListener(
-                    this,
-                    acc,
-                    SensorManager.SENSOR_DELAY_GAME
-            );
+            sm.unregisterListener(this);
+            sm.registerListener(this, acc, SensorManager.SENSOR_DELAY_GAME);
         }
 
-        if (cam != null) {
-            setupCamera();
+        if (cam != null && camera == null) setupCamera();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (running) {
+            new android.app.AlertDialog.Builder(this)
+                    .setTitle("측정 중")
+                    .setMessage("연속 측정 중에는 화면을 종료하지 마세요.\n먼저 STOP & ANALYZE를 눌러 측정을 종료해주세요.")
+                    .setPositiveButton("확인", null)
+                    .show();
+            return;
         }
+
+        super.onBackPressed();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        sm.unregisterListener(this);
-        closeCamera();
+
+        if (!running) {
+            sm.unregisterListener(this);
+            closeCamera();
+        }
     }
 
     static class P {
-        long wall;
-        long mono;
+        long wall, mono;
         float x, y, z;
         double t;
 
@@ -1269,12 +1326,82 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         String axis = "-";
     }
 
+    static class EventRecord {
+        int no;
+        long timeMs;
+        String line, equipment, process, unit, axis, base;
+        double peak, rms, duration, mx, my, mz;
+    }
+
+    static class SessionBarsView extends View {
+        private final ArrayList<EventRecord> data = new ArrayList<>();
+        private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        SessionBarsView(android.content.Context c, ArrayList<EventRecord> source) {
+            super(c);
+
+            data.addAll(source);
+
+            Collections.sort(
+                    data,
+                    (a, b) -> Double.compare(b.peak, a.peak)
+            );
+
+            if (data.size() > 6) {
+                while (data.size() > 6) data.remove(data.size() - 1);
+            }
+
+            setBackgroundColor(Color.WHITE);
+        }
+
+        @Override
+        protected void onDraw(Canvas c) {
+            super.onDraw(c);
+
+            if (data.isEmpty()) return;
+
+            float left = 18f;
+            float right = getWidth() - 18f;
+            float top = 18f;
+            float row = (getHeight() - 24f) / data.size();
+
+            double max = 1.0;
+            for (EventRecord r : data) max = Math.max(max, r.peak);
+
+            p.setTextSize(24f);
+            p.setColor(Color.DKGRAY);
+
+            for (int i = 0; i < data.size(); i++) {
+                EventRecord r = data.get(i);
+                float y = top + i * row;
+                float labelY = y + 24f;
+
+                String label = "#" + r.no + " " + r.process + " / " + r.unit;
+                c.drawText(label, left, labelY, p);
+
+                float barTop = y + 31f;
+                float barBottom = Math.min(getHeight() - 4f, barTop + 16f);
+                float barWidth = (float) ((right - left) * r.peak / max);
+
+                p.setColor(Color.rgb(110, 75, 190));
+                c.drawRoundRect(left, barTop, left + barWidth, barBottom, 8f, 8f, p);
+
+                p.setColor(Color.DKGRAY);
+                c.drawText(
+                        String.format(Locale.US, "%.2f", r.peak),
+                        Math.min(right - 60f, left + barWidth + 8f),
+                        barBottom,
+                        p
+                );
+            }
+        }
+    }
+
     static class ShockGraph extends View {
         ArrayList<Float> x = new ArrayList<>();
         ArrayList<Float> y = new ArrayList<>();
         ArrayList<Float> z = new ArrayList<>();
         ArrayList<Float> t = new ArrayList<>();
-
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         double spec = 2.0;
 
@@ -1285,9 +1412,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         void put(ArrayList<Float> a, float q) {
             a.add(q);
-            if (a.size() > 240) {
-                a.remove(0);
-            }
+            if (a.size() > 240) a.remove(0);
         }
 
         void add(float X, float Y, float Z, double T, double s) {
@@ -1311,11 +1436,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             if (a.size() < 2) return;
 
             p.setColor(col);
-            p.setStrokeWidth(
-                    col == Color.rgb(110, 75, 190)
-                            ? 5f
-                            : 3f
-            );
+            p.setStrokeWidth(col == Color.rgb(110, 75, 190) ? 5f : 3f);
 
             for (int i = 1; i < a.size(); i++) {
                 float x1 = (i - 1) * getWidth() / 239f;
@@ -1337,9 +1458,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
             float m = (float) Math.max(3.0, spec * 1.5);
 
-            for (float q : t) {
-                m = Math.max(m, q * 1.15f);
-            }
+            for (float q : t) m = Math.max(m, q * 1.15f);
 
             p.setColor(Color.rgb(220, 225, 230));
             p.setStrokeWidth(1f);
@@ -1354,22 +1473,11 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 );
             }
 
-            float sy =
-                    (float) (
-                            getHeight()
-                                    - spec / m * getHeight()
-                    );
+            float sy = (float) (getHeight() - spec / m * getHeight());
 
             p.setColor(Color.RED);
             p.setStrokeWidth(2f);
-
-            c.drawLine(
-                    0,
-                    sy,
-                    getWidth(),
-                    sy,
-                    p
-            );
+            c.drawLine(0, sy, getWidth(), sy, p);
 
             line(c, x, Color.rgb(0, 130, 220), m);
             line(c, y, Color.rgb(0, 170, 110), m);
