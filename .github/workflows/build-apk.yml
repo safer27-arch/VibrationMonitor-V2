@@ -93,8 +93,8 @@ jobs:
                   applicationId 'com.example.vibrationmonitor.v2'
                   minSdk 26
                   targetSdk 35
-                  versionCode 17
-                  versionName '3.7-SMART-IMPACT'
+                  versionCode 18
+                  versionName '3.8-PRODUCTION-TIMELINE'
               }
 
               buildTypes {

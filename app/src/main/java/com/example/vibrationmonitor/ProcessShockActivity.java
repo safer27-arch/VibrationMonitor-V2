@@ -31,6 +31,24 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     private long segmentProcessStartMs = 0L;
     private long eventProcessOffsetSec = 0L;
 
+    private boolean autoCorrectionEnabled = true;
+    private boolean autoPauseActive = false;
+    private long autoStopCandidateStartMs = 0L;
+    private long autoResumeCandidateStartMs = 0L;
+    private long autoCorrectionSuppressUntilMs = 0L;
+    private long autoPausedTotalMs = 0L;
+    private int autoCorrectionCount = 0;
+
+    private long calibrationSampleCount = 0L;
+    private double calibrationSumSq = 0.0;
+    private double autoQuietThreshold = 0.15;
+    private double autoResumeThreshold = 0.40;
+
+    private static final long AUTO_STOP_CONFIRM_MS = 3000L;
+    private static final long AUTO_STOP_CANDIDATE_UI_MS = 1200L;
+    private static final long AUTO_RESUME_CONFIRM_MS = 400L;
+    private static final long AUTO_MANUAL_SUPPRESS_MS = 5000L;
+
     private java.io.BufferedWriter continuousWriter = null;
     private java.io.File continuousFile = null;
     private java.io.File currentRunSummaryFile = null;
@@ -593,6 +611,9 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         recipe.addAll(parsed);
 
+        autoCorrectionEnabled = getSharedPreferences("ShockRecipe", MODE_PRIVATE)
+                .getBoolean(recipeKey() + "_auto_corr", true);
+
         if (timeline != null) {
             timeline.setRecipe(recipe);
         }
@@ -618,6 +639,28 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                         | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
         );
 
+        CheckBox autoCorrCheck = new CheckBox(this);
+        autoCorrCheck.setText("AUTO STOP CORRECTION");
+        autoCorrCheck.setTextSize(14);
+        autoCorrCheck.setChecked(autoCorrectionEnabled);
+
+        TextView autoCorrHelp = tv(
+                "저진동 상태가 3초 이상 지속되면 설비 정지 후보로 보고 PROCESS 시간만 자동 보정합니다. "
+                        + "공정 자체에 3초 이상의 정숙 구간이 많으면 OFF로 사용하세요.",
+                11,
+                Color.rgb(85, 100, 112)
+        );
+
+        LinearLayout recipeDialogBox = new LinearLayout(this);
+        recipeDialogBox.setOrientation(LinearLayout.VERTICAL);
+        recipeDialogBox.setPadding(dp(8), dp(2), dp(8), dp(2));
+        recipeDialogBox.addView(e, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                dp(260)
+        ));
+        recipeDialogBox.addView(autoCorrCheck);
+        recipeDialogBox.addView(autoCorrHelp);
+
         new android.app.AlertDialog.Builder(this)
                 .setTitle("AUTO TIMELINE RECIPE")
                 .setMessage(
@@ -626,7 +669,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                                 + "설비가 멈추면 PROCESS PAUSE를 누르면\n"
                                 + "진동 측정은 계속하고 공정시간만 멈춥니다."
                 )
-                .setView(e)
+                .setView(recipeDialogBox)
                 .setPositiveButton("저장", (d, w) -> {
                     ArrayList<RecipeUnit> parsed =
                             parseRecipe(e.getText().toString());
@@ -642,10 +685,12 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
                     recipe.clear();
                     recipe.addAll(parsed);
+                    autoCorrectionEnabled = autoCorrCheck.isChecked();
 
                     getSharedPreferences("ShockRecipe", MODE_PRIVATE)
                             .edit()
                             .putString(recipeKey(), recipeToText())
+                            .putBoolean(recipeKey() + "_auto_corr", autoCorrectionEnabled)
                             .apply();
 
                     Toast.makeText(
@@ -730,7 +775,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         }
 
         if (processPaused) {
-            return "LINE STOP";
+            return autoPauseActive ? "AUTO STOP" : "LINE STOP";
         }
 
         int idx = activeRecipeIndex(getProcessElapsedMs(now));
@@ -774,6 +819,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                                 + recipe.size()
                                 + " Units · "
                                 + String.format(Locale.US, "%.1fs", recipeTotalSec())
+                                + " · CORR "
+                                + (autoCorrectionEnabled ? "ON" : "OFF")
                             : "MANUAL UNIT · READY"
             );
         }
@@ -785,18 +832,152 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         long now = SystemClock.elapsedRealtime();
 
         if (!processPaused) {
+            autoPauseActive = false;
+            autoStopCandidateStartMs = 0L;
+            autoResumeCandidateStartMs = 0L;
+
             processPaused = true;
             processPauseStartMs = now;
             pauseButton.setText("RESUME");
-            status.setText("● LINE STOP / PROCESS TIME PAUSED");
+            status.setText("● MANUAL LINE STOP · PROCESS TIME PAUSED");
             status.setTextColor(Color.rgb(255, 185, 70));
         } else {
-            totalProcessPausedMs += Math.max(0L, now - processPauseStartMs);
+            long pausedMs = Math.max(0L, now - processPauseStartMs);
+            totalProcessPausedMs += pausedMs;
+
+            if (autoPauseActive) {
+                autoPausedTotalMs += pausedMs;
+            }
+
             processPauseStartMs = 0L;
             processPaused = false;
+            autoPauseActive = false;
+            autoStopCandidateStartMs = 0L;
+            autoResumeCandidateStartMs = 0L;
+            autoCorrectionSuppressUntilMs = now + AUTO_MANUAL_SUPPRESS_MS;
+
             pauseButton.setText("PAUSE");
-            status.setText("● MONITORING · AUTO TIMELINE");
+            status.setText("● MONITORING · AUTO TIMELINE · MANUAL OVERRIDE");
             status.setTextColor(Color.rgb(80, 220, 150));
+        }
+    }
+
+    private void resetAutoCorrectionCandidates() {
+        autoStopCandidateStartMs = 0L;
+        autoResumeCandidateStartMs = 0L;
+    }
+
+    private String timelineState() {
+        if (processPaused) {
+            return autoPauseActive ? "AUTO_HOLD" : "MANUAL_HOLD";
+        }
+
+        if (autoStopCandidateStartMs > 0L) {
+            return "STOP_CANDIDATE";
+        }
+
+        return "RUN";
+    }
+
+    private void beginAutoTimelineHold(long candidateStartMs) {
+        if (processPaused || !autoCorrectionEnabled) return;
+
+        processPaused = true;
+        autoPauseActive = true;
+        processPauseStartMs = candidateStartMs;
+        autoCorrectionCount++;
+        autoStopCandidateStartMs = 0L;
+        autoResumeCandidateStartMs = 0L;
+
+        pauseButton.setText("RESUME");
+        status.setText("● AUTO LINE STOP #" + autoCorrectionCount + " · TIMELINE HOLD");
+        status.setTextColor(Color.rgb(255, 185, 70));
+    }
+
+    private void endAutoTimelineHold(long now) {
+        if (!processPaused || !autoPauseActive) return;
+
+        long pausedMs = Math.max(0L, now - processPauseStartMs);
+        totalProcessPausedMs += pausedMs;
+        autoPausedTotalMs += pausedMs;
+
+        processPauseStartMs = 0L;
+        processPaused = false;
+        autoPauseActive = false;
+        autoStopCandidateStartMs = 0L;
+        autoResumeCandidateStartMs = 0L;
+
+        pauseButton.setText("PAUSE");
+        status.setText(String.format(
+                Locale.US,
+                "● AUTO RESUME · CORRECTED %.1fs",
+                pausedMs / 1000.0
+        ));
+        status.setTextColor(Color.rgb(80, 220, 150));
+    }
+
+    private void updateAutoTimelineCorrection(long now, double vibration) {
+        if (!running
+                || calibrating
+                || !isAutoMode()
+                || !autoCorrectionEnabled
+                || startMs <= 0L) {
+            resetAutoCorrectionCandidates();
+            return;
+        }
+
+        if (processPaused) {
+            if (!autoPauseActive) {
+                autoResumeCandidateStartMs = 0L;
+                return;
+            }
+
+            if (vibration >= autoResumeThreshold) {
+                if (autoResumeCandidateStartMs <= 0L) {
+                    autoResumeCandidateStartMs = now;
+                }
+
+                if (now - autoResumeCandidateStartMs >= AUTO_RESUME_CONFIRM_MS) {
+                    endAutoTimelineHold(now);
+                }
+            } else {
+                autoResumeCandidateStartMs = 0L;
+            }
+            return;
+        }
+
+        if (now < autoCorrectionSuppressUntilMs) {
+            autoStopCandidateStartMs = 0L;
+            return;
+        }
+
+        if (vibration <= autoQuietThreshold) {
+            if (autoStopCandidateStartMs <= 0L) {
+                autoStopCandidateStartMs = now;
+            }
+
+            long quietMs = now - autoStopCandidateStartMs;
+
+            if (quietMs >= AUTO_STOP_CANDIDATE_UI_MS
+                    && quietMs < AUTO_STOP_CONFIRM_MS
+                    && !eventOn) {
+                status.setText(String.format(
+                        Locale.US,
+                        "● STOP CANDIDATE %.1fs · AUTO CORR ARMED",
+                        quietMs / 1000.0
+                ));
+                status.setTextColor(Color.rgb(255, 185, 70));
+            }
+
+            if (quietMs >= AUTO_STOP_CONFIRM_MS) {
+                beginAutoTimelineHold(autoStopCandidateStartMs);
+            }
+        } else {
+            if (autoStopCandidateStartMs > 0L && !eventOn) {
+                status.setText("● MONITORING · AUTO TIMELINE");
+                status.setTextColor(Color.rgb(80, 220, 150));
+            }
+            autoStopCandidateStartMs = 0L;
         }
     }
 
@@ -823,7 +1004,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             );
 
             continuousWriter.write(
-                    "DateTime,RealElapsedMs,ProcessElapsedMs,ProcessPaused,"
+                    "DateTime,RealElapsedMs,ProcessElapsedMs,ProcessPaused,TimelineState,"
                             + "Line,Equipment,Process,UnitAction,X,Y,Z,Total,Spec\n"
             );
 
@@ -851,11 +1032,12 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
             continuousWriter.write(String.format(
                     Locale.US,
-                    "%s,%d,%d,%s,%s,%s,%s,%s,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+                    "%s,%d,%d,%s,%s,%s,%s,%s,%s,%.6f,%.6f,%.6f,%.6f,%.6f\n",
                     ts,
                     Math.max(0L, now - startMs),
                     getProcessElapsedMs(now),
                     processPaused ? "Y" : "N",
+                    timelineState(),
                     safe(lineInput.getText().toString().trim()),
                     safe(equipmentInput.getText().toString().trim()),
                     safe(processName),
@@ -976,8 +1158,24 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     private void stopMon() {
         if (!running) return;
 
+        long stopNow = SystemClock.elapsedRealtime();
+
         if (eventOn) finishEvent();
-        finalizeUnitSegment(SystemClock.elapsedRealtime());
+        finalizeUnitSegment(stopNow);
+
+        if (processPaused && processPauseStartMs > 0L) {
+            long pausedMs = Math.max(0L, stopNow - processPauseStartMs);
+            totalProcessPausedMs += pausedMs;
+            if (autoPauseActive) {
+                autoPausedTotalMs += pausedMs;
+            }
+        }
+
+        processPauseStartMs = 0L;
+        processPaused = false;
+        autoPauseActive = false;
+        resetAutoCorrectionCandidates();
+        closeContinuousCsv();
 
         running = false;
         calibrating = false;
@@ -1040,6 +1238,9 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         double t = Math.sqrt(x * x + y * y + z * z);
 
         if (calibrating) {
+            calibrationSampleCount++;
+            calibrationSumSq += t * t;
+
             long remain = Math.max(0L, calibrationEndMs - now);
 
             if (now - lastUi > 80L) {
@@ -1049,6 +1250,20 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             }
 
             if (now >= calibrationEndMs) {
+                double calibrationRms = Math.sqrt(
+                        calibrationSumSq / Math.max(1L, calibrationSampleCount)
+                );
+
+                autoQuietThreshold = Math.max(
+                        0.10,
+                        Math.min(spec * 0.20, calibrationRms * 3.0 + 0.03)
+                );
+
+                autoResumeThreshold = Math.max(
+                        autoQuietThreshold * 2.2,
+                        Math.min(spec * 0.35, autoQuietThreshold + 0.25)
+                );
+
                 calibrating = false;
                 startMs = now;
                 n = 0L;
@@ -1077,6 +1292,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             }
             return;
         }
+
+        updateAutoTimelineCorrection(now, t);
 
         String selectedProcess = String.valueOf(process.getSelectedItem());
         String selectedUnit = currentTaggedUnit(now);
@@ -1216,7 +1433,9 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                         unitElapsed,
                         unitDuration,
                         unitPct,
-                        processPaused ? "· PAUSED" : ""
+                        processPaused
+                                ? (autoPauseActive ? "· AUTO HOLD" : "· PAUSED")
+                                : (autoCorrectionEnabled ? "· CORR ON" : "· CORR OFF")
                 ));
             } else {
                 processClock.setText(String.format(
@@ -1271,6 +1490,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         eventOn = true;
         eventStart = now;
         lastAbove = now;
+        eventCoreEnd = 0L;
+        eventCoreClosed = false;
         impactCount++;
 
         eventLine = lineInput.getText().toString().trim();
@@ -2366,7 +2587,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                         + "Session RMS  %.3f m/s²\n"
                         + "주 충격 방향  %s AXIS\n"
                         + "X / Y / Z Peak  %.3f / %.3f / %.3f m/s²\n"
-                        + "SPEC  %.3f m/s²",
+                        + "SPEC  %.3f m/s²\n"
+                        + "Timeline Correction  %s · %d회 · %.1fs",
                 durationSec / 3600,
                 (durationSec / 60) % 60,
                 durationSec % 60,
@@ -2377,7 +2599,10 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 sessionMaxX,
                 sessionMaxY,
                 sessionMaxZ,
-                spec
+                spec,
+                autoCorrectionEnabled ? "ON" : "OFF",
+                autoCorrectionCount,
+                autoPausedTotalMs / 1000.0
         );
 
         box.addView(tv(summary, 15, Color.DKGRAY));
@@ -2488,6 +2713,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             while ((line = br.readLine()) != null) {
                 if (line.startsWith("Process : ")) processName = line.substring(10).trim();
                 else if (line.startsWith("Unit / Action : ")) unitName = line.substring(16).trim();
+                else if (line.startsWith("Peak (CORE) : ")) peakValue = line.substring(14).trim();
                 else if (line.startsWith("Peak : ")) peakValue = line.substring(7).trim();
             }
         } catch (Exception ignored) {}
