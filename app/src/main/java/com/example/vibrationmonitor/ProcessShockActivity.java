@@ -56,12 +56,16 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     private java.io.File currentUnitSummaryFile = null;
     private java.io.File currentImpactSummaryFile = null;
     private long runStartWallMs = 0L;
+    private long stoppedDurationSec = 0L;
+    private long stoppedProcessDurationSec = 0L;
     private int continuousSinceFlush = 0;
 
     private final ArrayList<UnitSegment> unitSegments = new ArrayList<>();
     private long segmentStartMs = 0L;
     private long segmentCount = 0L;
+    private double segmentSum = 0.0;
     private double segmentSumSq = 0.0;
+    private double segmentMin = Double.POSITIVE_INFINITY;
     private double segmentPeak = 0.0;
     private double segmentMaxX = 0.0;
     private double segmentMaxY = 0.0;
@@ -1226,7 +1230,9 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         lastCheckpointMs = 0L;
         segmentStartMs = 0L;
         segmentCount = 0L;
+        segmentSum = 0.0;
         segmentSumSq = 0.0;
+        segmentMin = Double.POSITIVE_INFINITY;
         segmentPeak = 0.0;
         segmentMaxX = 0.0;
         segmentMaxY = 0.0;
@@ -1269,6 +1275,18 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         if (!running) return;
 
         long stopNow = SystemClock.elapsedRealtime();
+
+        stoppedDurationSec = startMs > 0L
+                ? Math.max(0L, (stopNow - startMs) / 1000L)
+                : 0L;
+
+        stoppedProcessDurationSec = startMs > 0L
+                ? (
+                        isAutoMode()
+                                ? Math.max(0L, getProcessElapsedMs(stopNow) / 1000L)
+                                : stoppedDurationSec
+                )
+                : 0L;
 
         if (eventOn) finishEvent();
         finalizeUnitSegment(stopNow);
@@ -1418,7 +1436,9 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         if (!isAutoMode() || !processPaused) {
             segmentCount++;
+            segmentSum += t;
             segmentSumSq += t * t;
+            segmentMin = Math.min(segmentMin, t);
             segmentPeak = Math.max(segmentPeak, t);
             segmentMaxX = Math.max(segmentMaxX, Math.abs(x));
             segmentMaxY = Math.max(segmentMaxY, Math.abs(y));
@@ -1974,7 +1994,9 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     private void startUnitSegment(long now) {
         segmentStartMs = now;
         segmentCount = 0L;
+        segmentSum = 0.0;
         segmentSumSq = 0.0;
+        segmentMin = Double.POSITIVE_INFINITY;
         segmentPeak = 0.0;
         segmentMaxX = 0.0;
         segmentMaxY = 0.0;
@@ -2009,6 +2031,11 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 ? Math.max(0L, getProcessElapsedMs(now) - segmentProcessStartMs)
                 : Math.max(0L, now - segmentStartMs);
         r.durationSec = segmentElapsedMs / 1000.0;
+        r.sampleCount = segmentCount;
+        r.sum = segmentSum;
+        r.sumSq = segmentSumSq;
+        r.avg = segmentCount > 0L ? segmentSum / segmentCount : 0.0;
+        r.min = segmentCount > 0L && Double.isFinite(segmentMin) ? segmentMin : 0.0;
         r.peak = segmentPeak;
         r.rms = Math.sqrt(segmentSumSq / Math.max(1L, segmentCount));
         r.impactCount = Math.max(0, impactCount - segmentImpactStartCount);
@@ -2053,7 +2080,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 )
         )) {
             o.println(
-                    "Segment,Process,UnitAction,DurationSec,Peak,RMS,ImpactCount,Axis,XPeak,YPeak,ZPeak"
+                    "Segment,Process,UnitAction,DurationSec,Avg,Min,Max,RMS,ImpactCount,Axis,XPeak,YPeak,ZPeak"
             );
 
             int no = 1;
@@ -2061,11 +2088,13 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             for (UnitSegment r : unitSegments) {
                 o.println(String.format(
                         Locale.US,
-                        "%d,%s,%s,%.3f,%.6f,%.6f,%d,%s,%.6f,%.6f,%.6f",
+                        "%d,%s,%s,%.3f,%.6f,%.6f,%.6f,%.6f,%d,%s,%.6f,%.6f,%.6f",
                         no++,
                         safe(r.process),
                         safe(r.unit),
                         r.durationSec,
+                        r.avg,
+                        r.min,
                         r.peak,
                         r.rms,
                         r.impactCount,
@@ -2126,12 +2155,21 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         );
 
         long now = SystemClock.elapsedRealtime();
-        long realDurationSec = startMs > 0L
-                ? Math.max(0L, (now - startMs) / 1000L)
-                : 0L;
-        long processDurationSec = startMs > 0L
-                ? Math.max(0L, getProcessElapsedMs(now) / 1000L)
-                : 0L;
+        long realDurationSec = running
+                ? (
+                        startMs > 0L
+                                ? Math.max(0L, (now - startMs) / 1000L)
+                                : 0L
+                )
+                : stoppedDurationSec;
+
+        long processDurationSec = running
+                ? (
+                        startMs > 0L
+                                ? Math.max(0L, getProcessElapsedMs(now) / 1000L)
+                                : 0L
+                )
+                : stoppedProcessDurationSec;
         double sessionRms = n > 0L ? Math.sqrt(sumSq / n) : 0.0;
 
         String mainAxis =
@@ -2254,7 +2292,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 "RAW + 전체 평가 + 사진 + 그래프 + Event CSV",
                 "측정 시작부터 종료까지 모든 X / Y / Z / Total",
                 "전체 측정시간 / Peak / RMS / 방향 / MCSC",
-                "Unit별 시간 / Peak / RMS / Impact",
+                "MCSC Unit별 시간 / Avg / Min / Max / RMS / Impact",
                 "충격 이벤트별 Peak / RMS / 방향 / 시간",
                 "충격 당시 사진 + 그래프 + Event CSV + 요약"
         };
@@ -2698,9 +2736,13 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 map.put(key, a);
             }
 
+            a.unit = r.unit;
             a.count += r.impactCount;
+            a.sampleCount += r.sampleCount;
+            a.sum += r.sum;
+            a.sumSq += r.sumSq;
+            a.min = Math.min(a.min, r.min);
             a.maxPeak = Math.max(a.maxPeak, r.peak);
-            a.rmsWeighted += r.rms * Math.max(0.001, r.durationSec);
             a.durationSec += r.durationSec;
             a.segmentCount++;
         }
@@ -2751,7 +2793,9 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         long[] count = new long[size];
         long[] firstMs = new long[size];
         long[] lastMs = new long[size];
+        double[] sum = new double[size];
         double[] sumSq = new double[size];
+        double[] min = new double[size];
         double[] pk = new double[size];
         double[] mx = new double[size];
         double[] my = new double[size];
@@ -2759,6 +2803,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         Arrays.fill(firstMs, -1L);
         Arrays.fill(lastMs, -1L);
+        Arrays.fill(min, Double.POSITIVE_INFINITY);
 
         try (java.io.BufferedReader br = new java.io.BufferedReader(
                 new java.io.InputStreamReader(
@@ -2829,7 +2874,9 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                     lastMs[idx] = processMs;
 
                     count[idx]++;
+                    sum[idx] += t;
                     sumSq[idx] += t * t;
+                    min[idx] = Math.min(min[idx], t);
                     pk[idx] = Math.max(pk[idx], t);
                     mx[idx] = Math.max(mx[idx], x);
                     my[idx] = Math.max(my[idx], y);
@@ -2866,6 +2913,11 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             u.durationSec = firstMs[i] >= 0L && lastMs[i] >= firstMs[i]
                     ? Math.max(0.10, (lastMs[i] - firstMs[i]) / 1000.0)
                     : recipe.get(i).seconds;
+            u.sampleCount = count[i];
+            u.sum = sum[i];
+            u.sumSq = sumSq[i];
+            u.avg = count[i] > 0L ? sum[i] / count[i] : 0.0;
+            u.min = count[i] > 0L && Double.isFinite(min[i]) ? min[i] : 0.0;
             u.peak = pk[i];
             u.rms = Math.sqrt(sumSq[i] / Math.max(1L, count[i]));
             u.impactCount = eventCount[i];
@@ -2996,9 +3048,115 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 .show();
     }
 
+    private int mcscOrderOf(String unitName) {
+        if (unitName == null) return Integer.MAX_VALUE;
+
+        for (int i = 0; i < recipe.size(); i++) {
+            if (unitName.equals(recipe.get(i).name)) return i;
+        }
+
+        return Integer.MAX_VALUE;
+    }
+
+    private String mcscRangeForUnit(String unitName) {
+        double start = 0.0;
+
+        for (RecipeUnit r : recipe) {
+            double end = start + r.seconds;
+
+            if (r.name != null && r.name.equals(unitName)) {
+                return String.format(Locale.US, "%.1f-%.1fs", start, end);
+            }
+
+            start = end;
+        }
+
+        return "-";
+    }
+
+    private LinearLayout buildMcscVibrationTable(ArrayList<UnitAggregate> source) {
+        ArrayList<UnitAggregate> rows = new ArrayList<>(source);
+
+        Collections.sort(rows, (a, b) -> {
+            int oa = mcscOrderOf(a.unit);
+            int ob = mcscOrderOf(b.unit);
+            if (oa != ob) return Integer.compare(oa, ob);
+            return a.label.compareTo(b.label);
+        });
+
+        LinearLayout table = new LinearLayout(this);
+        table.setOrientation(LinearLayout.VERTICAL);
+        table.setPadding(dp(4), dp(4), dp(4), dp(6));
+        table.setBackground(bg(Color.rgb(247, 249, 251), 10));
+
+        TextView guide = tv(
+                "AVG=평균 · MIN=최소 · MAX=최대 · RMS=진동수준 · IMP=충격횟수",
+                10,
+                Color.rgb(90, 105, 118)
+        );
+        guide.setPadding(dp(4), dp(2), dp(4), dp(5));
+        table.addView(guide);
+
+        for (int i = 0; i < rows.size(); i++) {
+            UnitAggregate a = rows.get(i);
+
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.VERTICAL);
+            row.setPadding(dp(7), dp(5), dp(7), dp(5));
+            row.setBackground(bg(
+                    i % 2 == 0 ? Color.WHITE : Color.rgb(240, 245, 248),
+                    7
+            ));
+
+            TextView line1 = tv(
+                    String.format(
+                            Locale.US,
+                            "%s   MCSC %s   ACTIVE %.1fs",
+                            a.unit,
+                            mcscRangeForUnit(a.unit),
+                            a.durationSec
+                    ),
+                    11,
+                    Color.rgb(15, 38, 61)
+            );
+            line1.setTypeface(null, 1);
+            line1.setPadding(0, 0, 0, dp(1));
+
+            TextView line2 = tv(
+                    String.format(
+                            Locale.US,
+                            "AVG %.3f   MIN %.3f   MAX %.3f   RMS %.3f   IMP %d",
+                            a.avg(),
+                            a.minValue(),
+                            a.maxPeak,
+                            a.avgRms(),
+                            a.count
+                    ),
+                    10,
+                    Color.DKGRAY
+            );
+            line2.setTypeface(android.graphics.Typeface.MONOSPACE);
+            line2.setPadding(0, 0, 0, 0);
+
+            row.addView(line1);
+            row.addView(line2);
+
+            LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+            rp.setMargins(0, 0, 0, dp(4));
+            table.addView(row, rp);
+        }
+
+        return table;
+    }
+
     private void showSessionSummary() {
         long now = SystemClock.elapsedRealtime();
-        long durationSec = startMs > 0L ? Math.max(0L, (now - startMs) / 1000L) : 0L;
+        long durationSec = running
+                ? (startMs > 0L ? Math.max(0L, (now - startMs) / 1000L) : 0L)
+                : stoppedDurationSec;
         double sessionRms = n > 0L ? Math.sqrt(sumSq / n) : 0.0;
 
         String mainAxis =
@@ -3127,9 +3285,19 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         if (!unitSegments.isEmpty()) {
             ArrayList<UnitAggregate> aggregates = buildUnitAggregates();
+
             if (!aggregates.isEmpty()) {
+                TextView vibrationTitle = tv(
+                        "MCSC UNIT VIBRATION ANALYSIS · AVG / MIN / MAX / RMS",
+                        13,
+                        Color.rgb(15, 38, 61)
+                );
+                vibrationTitle.setTypeface(null, 1);
+                box.addView(vibrationTitle);
+                box.addView(buildMcscVibrationTable(aggregates));
+
                 TextView unitTitle = tv(
-                        "PRODUCTION UNIT SUMMARY · PEAK / RMS / IMPACT / TIME",
+                        "PRODUCTION UNIT RANKING · MAX / RMS / IMPACT / TIME",
                         13,
                         Color.rgb(15, 38, 61)
                 );
@@ -3137,8 +3305,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 box.addView(unitTitle);
 
                 int unitChartHeight = Math.max(
-                        98,
-                        Math.min(360, aggregates.size() * 72 + 24)
+                        108,
+                        Math.min(420, aggregates.size() * 82 + 24)
                 );
 
                 box.addView(
@@ -3616,7 +3784,12 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         String process = "-";
         String unit = "-";
         String axis = "-";
+        long sampleCount = 0L;
         double durationSec = 0.0;
+        double sum = 0.0;
+        double sumSq = 0.0;
+        double avg = 0.0;
+        double min = 0.0;
         double peak = 0.0;
         double rms = 0.0;
         double mx = 0.0;
@@ -3627,15 +3800,27 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
     static class UnitAggregate {
         String label = "-";
+        String unit = "-";
         int count = 0;
         int segmentCount = 0;
+        long sampleCount = 0L;
+        double sum = 0.0;
+        double sumSq = 0.0;
+        double min = Double.POSITIVE_INFINITY;
         double maxPeak = 0.0;
-        double rmsWeighted = 0.0;
         double durationSec = 0.0;
 
+        double avg() {
+            return sampleCount > 0L ? sum / sampleCount : 0.0;
+        }
+
+        double minValue() {
+            return sampleCount > 0L && Double.isFinite(min) ? min : 0.0;
+        }
+
         double avgRms() {
-            return durationSec > 0.0
-                    ? rmsWeighted / durationSec
+            return sampleCount > 0L
+                    ? Math.sqrt(sumSq / sampleCount)
                     : 0.0;
         }
     }
@@ -3836,7 +4021,9 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 c.drawText(
                         String.format(
                                 Locale.US,
-                                "MAX %.2f · RMS %.2f · %d events · %.1fs",
+                                "AVG %.2f · MIN %.2f · MAX %.2f · RMS %.2f · %d events · %.1fs",
+                                a.avg(),
+                                a.minValue(),
                                 a.maxPeak,
                                 a.avgRms(),
                                 a.count,
