@@ -93,8 +93,8 @@ jobs:
                   applicationId 'com.example.vibrationmonitor.v2'
                   minSdk 26
                   targetSdk 35
-                  versionCode 15
-                  versionName '3.6-DATA-EXPORT'
+                  versionCode 16
+                  versionName '3.6.1-EXPORT-MENU-FIX'
               }
 
               buildTypes {

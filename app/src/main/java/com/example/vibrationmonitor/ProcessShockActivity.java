@@ -1849,21 +1849,90 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             return;
         }
 
-        final String[] items = {
-                "전체 데이터 ZIP  · RAW + 평가 + 사진/그래프",
-                "전체 RAW CSV  · 모든 측정값",
-                "RUN SUMMARY CSV  · 전체 평가",
-                "UNIT SUMMARY CSV  · Unit별 평가",
-                "IMPACT SUMMARY CSV  · 충격 이벤트 평가",
-                "EVENT BLACKBOX ZIP  · 사진 + 그래프 + Event CSV"
+        final String[] titles = {
+                "전체 데이터 ZIP",
+                "전체 RAW CSV",
+                "RUN SUMMARY CSV",
+                "UNIT SUMMARY CSV",
+                "IMPACT SUMMARY CSV",
+                "EVENT BLACKBOX ZIP"
         };
 
-        new android.app.AlertDialog.Builder(this)
-                .setTitle("MEASUREMENT DATA DOWNLOAD")
-                .setMessage("저장 위치 : Download / VibrationMonitor")
-                .setItems(items, (d, which) -> exportCurrentData(which))
-                .setNegativeButton("취소", null)
-                .show();
+        final String[] desc = {
+                "RAW + 전체 평가 + 사진 + 그래프 + Event CSV",
+                "측정 시작부터 종료까지 모든 X / Y / Z / Total",
+                "전체 측정시간 / Peak / RMS / 방향 / Recipe",
+                "Unit별 시간 / Peak / RMS / Impact",
+                "충격 이벤트별 Peak / RMS / 방향 / 시간",
+                "충격 당시 사진 + 그래프 + Event CSV + 요약"
+        };
+
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(12), dp(6), dp(12), dp(8));
+
+        TextView savePath = tv(
+                "저장 위치 : Download / VibrationMonitor",
+                12,
+                Color.rgb(80, 95, 108)
+        );
+        savePath.setPadding(dp(4), dp(2), dp(4), dp(8));
+        box.addView(savePath);
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(box);
+
+        final android.app.AlertDialog dialog =
+                new android.app.AlertDialog.Builder(this)
+                        .setTitle("MEASUREMENT DATA DOWNLOAD")
+                        .setView(scroll)
+                        .setNegativeButton("취소", null)
+                        .create();
+
+        for (int i = 0; i < titles.length; i++) {
+            final int index = i;
+
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.VERTICAL);
+            row.setPadding(dp(10), dp(7), dp(10), dp(7));
+            row.setBackground(bg(
+                    i == 0
+                            ? Color.rgb(232, 244, 249)
+                            : Color.rgb(246, 248, 250),
+                    10
+            ));
+
+            TextView title = tv(
+                    titles[i],
+                    i == 0 ? 14 : 13,
+                    Color.rgb(15, 38, 61)
+            );
+            title.setTypeface(null, 1);
+            row.addView(title);
+
+            TextView detail = tv(
+                    desc[i],
+                    11,
+                    Color.rgb(95, 110, 122)
+            );
+            detail.setPadding(0, dp(2), 0, 0);
+            row.addView(detail);
+
+            LinearLayout.LayoutParams rp =
+                    new LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                    );
+            rp.setMargins(0, 0, 0, dp(7));
+            box.addView(row, rp);
+
+            row.setOnClickListener(v -> {
+                dialog.dismiss();
+                exportCurrentData(index);
+            });
+        }
+
+        dialog.show();
     }
 
     private void exportCurrentData(int which) {
