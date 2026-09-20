@@ -29,7 +29,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     private long processPauseStartMs = 0L;
     private long totalProcessPausedMs = 0L;
     private long segmentProcessStartMs = 0L;
-    private long eventProcessOffsetSec = 0L;
+    private double eventProcessOffsetSec = 0.0;
 
     private boolean autoCorrectionEnabled = true;
     private boolean autoPauseActive = false;
@@ -587,8 +587,9 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
             try {
                 double sec = Double.parseDouble(p[1].trim());
+                sec = Math.round(sec * 10.0) / 10.0;
 
-                if (!name.isEmpty() && sec > 0.05) {
+                if (!name.isEmpty() && sec >= 0.1) {
                     RecipeUnit r = new RecipeUnit();
                     r.name = name;
                     r.seconds = sec;
@@ -659,9 +660,22 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         return sb.toString();
     }
 
+    private String mcscStatusText(String text) {
+        ArrayList<RecipeUnit> list = parseRecipe(text);
+        double total = 0.0;
+
+        for (RecipeUnit r : list) total += r.seconds;
+
+        return String.format(
+                Locale.US,
+                "MCSC UNIT COUNT : %d · TOTAL %.1fs · STEP 0.1s",
+                list.size(),
+                total
+        );
+    }
+
     private void updateMcscCount(EditText editor, TextView countLabel) {
-        ArrayList<RecipeUnit> list = parseRecipe(editor.getText().toString());
-        countLabel.setText("MCSC UNIT COUNT : " + list.size());
+        countLabel.setText(mcscStatusText(editor.getText().toString()));
     }
 
     private void changeMcscCount(EditText editor, TextView countLabel, int delta) {
@@ -713,11 +727,34 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         );
 
         TextView mcscCount = tv(
-                "MCSC UNIT COUNT : " + parseRecipe(e.getText().toString()).size(),
+                mcscStatusText(e.getText().toString()),
                 12,
                 Color.rgb(55, 75, 92)
         );
         mcscCount.setTypeface(null, 1);
+
+        e.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(
+                    CharSequence s,
+                    int start,
+                    int count,
+                    int after
+            ) {}
+
+            @Override
+            public void onTextChanged(
+                    CharSequence s,
+                    int start,
+                    int before,
+                    int count
+            ) {}
+
+            @Override
+            public void afterTextChanged(android.text.Editable editable) {
+                updateMcscCount(e, mcscCount);
+            }
+        });
 
         LinearLayout mcscButtons = new LinearLayout(this);
         mcscButtons.setOrientation(LinearLayout.HORIZONTAL);
@@ -776,8 +813,9 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         new android.app.AlertDialog.Builder(this)
                 .setTitle("MCSC · UNIT TIME MAP")
                 .setMessage(
-                        "MCSC Unit별 기준시간 설정\n한 줄에 Unit 이름, 기준시간(초)\n"
-                                + "예: Loader,8.5\nTransfer,10\nPress,12\n\n"
+                        "ENGINEER MCSC · 0.1초 단위 설정\n"
+                                + "한 줄에 Unit 이름, 기준시간(초)\n"
+                                + "예: Loader,0.4\nTransfer,0.8\nPress,1.3\n\n"
                                 + "설비가 멈추면 PROCESS PAUSE를 누르면\n"
                                 + "진동 측정은 계속하고 공정시간만 멈춥니다."
                 )
@@ -1543,7 +1581,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             rms.setText(String.format(Locale.US, "RMS\n%.3f", Math.sqrt(sumSq / Math.max(1L, n))));
             impact.setText("IMPACT\n" + impactCount);
 
-            long processSec = getProcessElapsedMs(now) / 1000L;
+            double processExactSec = getProcessElapsedMs(now) / 1000.0;
+            long processSec = (long) processExactSec;
 
             if (isAutoMode()) {
                 double unitElapsed = recipeUnitProgressSec(now);
@@ -1552,17 +1591,40 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                         ? Math.min(100.0, unitElapsed / unitDuration * 100.0)
                         : 0.0;
 
+                double mcscTotal = recipeTotalSec();
+                String unitPosition;
+
+                if (mcscTotal > 0.0 && processExactSec >= mcscTotal) {
+                    unitPosition = String.format(
+                            Locale.US,
+                            "OVER MCSC +%.1fs",
+                            processExactSec - mcscTotal
+                    );
+                } else {
+                    unitPosition = String.format(
+                            Locale.US,
+                            "%s · %.1f / %.1fs · %.0f%%",
+                            selectedUnit,
+                            unitElapsed,
+                            unitDuration,
+                            unitPct
+                    );
+                }
+
+                String processTimeText = String.format(
+                        Locale.US,
+                        "%02d:%04.1f",
+                        (int) (processExactSec / 60.0),
+                        processExactSec % 60.0
+                );
+
                 processClock.setText(String.format(
                         Locale.US,
-                        "REAL %02d:%02d · PROCESS %02d:%02d\n%s · %.1f / %.1fs · %.0f%% %s",
+                        "REAL %02d:%02d · PROCESS %s\n%s %s",
                         sec / 60,
                         sec % 60,
-                        processSec / 60,
-                        processSec % 60,
-                        selectedUnit,
-                        unitElapsed,
-                        unitDuration,
-                        unitPct,
+                        processTimeText,
+                        unitPosition,
                         processPaused
                                 ? (autoPauseActive ? "· AUTO HOLD" : "· PAUSED")
                                 : (autoCorrectionEnabled ? "· CORR ON" : "· CORR OFF")
@@ -1698,12 +1760,12 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         record.offsetSec = eventProcessOffsetSec;
         sessionEvents.add(record);
 
-        long timelineDuration = isAutoMode()
-                ? Math.max(1L, Math.round(recipeTotalSec()))
+        double timelineDuration = isAutoMode()
+                ? Math.max(0.1, recipeTotalSec())
                 : (
                         startMs > 0L
-                                ? Math.max(1L, (SystemClock.elapsedRealtime() - startMs) / 1000L)
-                                : 1L
+                                ? Math.max(0.1, (SystemClock.elapsedRealtime() - startMs) / 1000.0)
+                                : 0.1
                 );
         timeline.refresh(sessionEvents, timelineDuration);
         saveActiveCheckpoint();
@@ -2046,7 +2108,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 ? "X"
                 : (r.my >= r.mz ? "Y" : "Z");
 
-        if (r.durationSec >= 0.10) {
+        if (r.sampleCount > 0L) {
             unitSegments.add(r);
         }
 
@@ -2656,7 +2718,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             for (EventRecord r : sessionEvents) {
                 o.println(String.format(
                         Locale.US,
-                        "%d,%d,%s,%s,%s,%s,%.6f,%.6f,%.3f,%s",
+                        "%d,%.3f,%s,%s,%s,%s,%.6f,%.6f,%.3f,%s",
                         r.no,
                         r.offsetSec,
                         safe(r.line),
@@ -2750,8 +2812,10 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         return new ArrayList<>(map.values());
     }
 
-    private String mcscUnitAtOffset(long offsetSec) {
-        int idx = activeRecipeIndex(Math.max(0L, offsetSec) * 1000L);
+    private String mcscUnitAtOffset(double offsetSec) {
+        int idx = activeRecipeIndex(
+                Math.round(Math.max(0.0, offsetSec) * 1000.0)
+        );
 
         if (idx >= 0 && idx < recipe.size()) {
             return recipe.get(idx).name;
@@ -2987,7 +3051,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         box.setPadding(dp(10), dp(4), dp(10), dp(6));
 
         TextView help = tv(
-                "측정 후 실제 설비 진행시간에 맞게 Unit 이름/시간을 수정하세요. "
+                "측정 후 실제 설비 진행시간에 맞게 Unit 이름/시간을 0.1초 단위로 수정하세요. "
                         + "적용 시 Production Impact의 Unit 위치와 Unit Summary를 RAW 데이터 기준으로 다시 계산합니다. "
                         + "원본 RAW/Event Blackbox는 변경하지 않습니다.",
                 11,
@@ -3090,7 +3154,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         table.setBackground(bg(Color.rgb(247, 249, 251), 10));
 
         TextView guide = tv(
-                "AVG=평균 · MIN=최소 · MAX=최대 · RMS=진동수준 · IMP=충격횟수",
+                "AVG=평균 · MIN=최소 · MAX=최대 · RMS=진동수준 · IMP=충격횟수 · SMP=샘플수",
                 10,
                 Color.rgb(90, 105, 118)
         );
@@ -3125,12 +3189,13 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             TextView line2 = tv(
                     String.format(
                             Locale.US,
-                            "AVG %.3f   MIN %.3f   MAX %.3f   RMS %.3f   IMP %d",
+                            "AVG %.3f   MIN %.3f   MAX %.3f   RMS %.3f   IMP %d   SMP %d",
                             a.avg(),
                             a.minValue(),
                             a.maxPeak,
                             a.avgRms(),
-                            a.count
+                            a.count,
+                            a.sampleCount
                     ),
                     10,
                     Color.DKGRAY
@@ -3775,7 +3840,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     static class EventRecord {
         int no;
         long timeMs;
-        long offsetSec;
+        double offsetSec;
         String line, equipment, process, unit, axis, base;
         double peak, rms, duration, mx, my, mz;
     }
@@ -3829,7 +3894,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         private final ArrayList<EventRecord> data = new ArrayList<>();
         private final ArrayList<RecipeUnit> recipe = new ArrayList<>();
         private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private long durationSec = 1L;
+        private double durationSec = 1.0;
         private double processSec = 0.0;
         private boolean paused = false;
 
@@ -3856,14 +3921,14 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             for (RecipeUnit r : recipe) total += r.seconds;
 
             if (total > 0.0) {
-                durationSec = Math.max(1L, Math.round(total));
+                durationSec = Math.max(0.1, total);
             }
 
             invalidate();
         }
 
-        void setDuration(long sec) {
-            durationSec = Math.max(1L, sec);
+        void setDuration(double sec) {
+            durationSec = Math.max(0.1, sec);
             invalidate();
         }
 
@@ -3873,10 +3938,10 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             invalidate();
         }
 
-        void refresh(ArrayList<EventRecord> source, long sec) {
+        void refresh(ArrayList<EventRecord> source, double sec) {
             data.clear();
             data.addAll(source);
-            durationSec = Math.max(1L, sec);
+            durationSec = Math.max(0.1, sec);
             invalidate();
         }
 
@@ -3893,6 +3958,20 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             double total = 0.0;
             for (RecipeUnit r : recipe) total += r.seconds;
 
+            double displayEnd = Math.max(0.1, durationSec);
+
+            if (total > 0.0) {
+                displayEnd = Math.max(displayEnd, total);
+
+                if (processSec > total) {
+                    double over = processSec - total;
+                    double reserve = Math.max(0.5, Math.max(total * 0.12, over * 1.15));
+                    displayEnd = Math.max(displayEnd, total + reserve);
+                }
+            } else {
+                displayEnd = Math.max(displayEnd, processSec * 1.05);
+            }
+
             if (!recipe.isEmpty() && total > 0.0) {
                 double acc = 0.0;
 
@@ -3901,8 +3980,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                     double start = acc;
                     acc += r.seconds;
 
-                    float x1 = left + (right - left) * (float) (start / total);
-                    float x2 = left + (right - left) * (float) (acc / total);
+                    float x1 = left + (right - left) * (float) (start / displayEnd);
+                    float x2 = left + (right - left) * (float) (acc / displayEnd);
 
                     boolean active = processSec >= start && processSec < acc;
 
@@ -3934,6 +4013,34 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                     );
                 }
 
+                float mcscEndX = left + (right - left) * (float) (total / displayEnd);
+
+                if (processSec > total && displayEnd > total) {
+                    p.setColor(Color.rgb(255, 238, 205));
+                    c.drawRect(mcscEndX, top, right, bottom, p);
+
+                    p.setColor(Color.rgb(210, 135, 25));
+                    p.setStrokeWidth(2f);
+                    c.drawLine(mcscEndX, top, mcscEndX, bottom, p);
+
+                    p.setTextSize(11f);
+                    p.setColor(Color.rgb(170, 100, 10));
+                    String overText = String.format(
+                            Locale.US,
+                            "OVER +%.1fs",
+                            Math.max(0.0, processSec - total)
+                    );
+                    c.drawText(
+                            overText,
+                            Math.min(
+                                    right - p.measureText(overText) - 2f,
+                                    mcscEndX + 4f
+                            ),
+                            top + 14f,
+                            p
+                    );
+                }
+
                 p.setColor(Color.rgb(145, 160, 172));
                 p.setStrokeWidth(1.5f);
                 c.drawLine(right, top, right, bottom, p);
@@ -3945,22 +4052,24 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             float px = left + (right - left)
                     * (float) Math.min(
                             1.0,
-                            processSec / Math.max(1.0, durationSec)
+                            processSec / Math.max(0.1, displayEnd)
                     );
 
             p.setColor(
                     paused
                             ? Color.rgb(230, 150, 45)
-                            : Color.rgb(0, 125, 110)
+                            : (total > 0.0 && processSec > total
+                                    ? Color.rgb(230, 150, 45)
+                                    : Color.rgb(0, 125, 110))
             );
             p.setStrokeWidth(4f);
             c.drawLine(px, top - 5f, px, bottom + 5f, p);
 
             for (EventRecord r : data) {
                 float x = left + (right - left)
-                        * Math.min(
-                                1f,
-                                r.offsetSec / (float) Math.max(1L, durationSec)
+                        * (float) Math.min(
+                                1.0,
+                                r.offsetSec / Math.max(0.1, displayEnd)
                         );
 
                 p.setColor(Color.rgb(205, 68, 72));
@@ -3976,7 +4085,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             p.setColor(Color.DKGRAY);
             c.drawText("0s", left, getHeight() - 4f, p);
 
-            String endText = durationSec + "s";
+            String endText = String.format(Locale.US, "%.1fs", displayEnd);
             c.drawText(
                     endText,
                     Math.max(left, right - p.measureText(endText)),
