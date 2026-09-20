@@ -93,8 +93,8 @@ jobs:
                   applicationId 'com.example.vibrationmonitor.v2'
                   minSdk 26
                   targetSdk 35
-                  versionCode 22
-                  versionName '4.2-MCSC-0.1S-TIMELINE'
+                  versionCode 23
+                  versionName '4.3-REMOTE-MONITOR'
               }
 
               buildTypes {

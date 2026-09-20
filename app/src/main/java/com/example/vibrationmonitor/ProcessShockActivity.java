@@ -21,8 +21,33 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     private ShockGraph graph;
     private ImpactTimelineView timeline;
     private TextView segmentInfo, processClock;
-    private Button recipeButton, pauseButton;
+    private Button recipeButton, pauseButton, remoteButton;
     private long lastCheckpointMs = 0L;
+
+    private RemoteMonitorServer remoteServer = null;
+    private final ArrayDeque<double[]> remotePoints = new ArrayDeque<>();
+    private long remoteLastPointMs = 0L;
+
+    private volatile boolean remoteRunning = false;
+    private volatile boolean remoteCalibrating = false;
+    private volatile boolean remotePaused = false;
+    private volatile double remoteX = 0.0;
+    private volatile double remoteY = 0.0;
+    private volatile double remoteZ = 0.0;
+    private volatile double remoteTotal = 0.0;
+    private volatile double remotePeak = 0.0;
+    private volatile double remoteRms = 0.0;
+    private volatile double remoteProcessSec = 0.0;
+    private volatile double remoteMcscTotal = 0.0;
+    private volatile double remoteSpec = 2.0;
+    private volatile String remoteLine = "-";
+    private volatile String remoteEquipment = "-";
+    private volatile String remoteProcess = "-";
+    private volatile String remoteUnit = "-";
+    private volatile String remoteTimelineState = "READY";
+    private volatile String remoteMcscJson = "[]";
+    private volatile String remoteLastImpact = "-";
+    private volatile String remoteEventsJson = "[]";
 
     private final ArrayList<RecipeUnit> recipe = new ArrayList<>();
     private boolean processPaused = false;
@@ -480,6 +505,14 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         downloadLp.setMargins(dp(3), dp(9), 0, 0);
         dataActionRow.addView(dataDownload, downloadLp);
         dataDownload.setOnClickListener(v -> showExportDialog());
+
+        remoteButton = btn("REMOTE VIEW", Color.rgb(0, 125, 110));
+        remoteButton.setTextSize(10);
+        LinearLayout.LayoutParams remoteLp =
+                new LinearLayout.LayoutParams(0, dp(50), 1f);
+        remoteLp.setMargins(dp(3), dp(9), 0, 0);
+        dataActionRow.addView(remoteButton, remoteLp);
+        remoteButton.setOnClickListener(v -> showRemoteMonitorDialog());
 
         root.addView(dataActionRow);
 
@@ -1345,6 +1378,14 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         running = false;
         calibrating = false;
+
+        remoteRunning = false;
+        remoteCalibrating = false;
+        remotePaused = false;
+        remoteProcessSec = stoppedProcessDurationSec;
+        remoteTimelineState = "STOPPED";
+        refreshRemoteMetadata();
+
         sm.unregisterListener(this);
         stopService(new android.content.Intent(this, ProcessShockKeepAliveService.class));
 
@@ -1402,6 +1443,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         float y = e.values[1] - gy;
         float z = e.values[2] - gz;
         double t = Math.sqrt(x * x + y * y + z * z);
+
+        updateRemoteSnapshot(now, x, y, z, t);
 
         if (calibrating) {
             calibrationSampleCount++;
@@ -1546,8 +1589,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         if (startMs > 0L) {
             timeline.setDuration(
                     isAutoMode()
-                            ? Math.max(1L, Math.round(recipeTotalSec()))
-                            : Math.max(1L, (now - startMs) / 1000L)
+                            ? Math.max(0.1, recipeTotalSec())
+                            : Math.max(0.1, (now - startMs) / 1000.0)
             );
 
             timeline.setProcessPosition(
@@ -1759,6 +1802,17 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         record.base = bn;
         record.offsetSec = eventProcessOffsetSec;
         sessionEvents.add(record);
+
+        remoteLastImpact = String.format(
+                Locale.US,
+                "#%03d · %s / %s · PEAK %.3f · RMS %.3f",
+                record.no,
+                blank(record.process),
+                blank(record.unit),
+                record.peak,
+                record.rms
+        );
+        refreshRemoteEventsJson();
 
         double timelineDuration = isAutoMode()
                 ? Math.max(0.1, recipeTotalSec())
@@ -3550,6 +3604,270 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         return sb.toString();
     }
 
+    private String remoteJsonEscape(String value) {
+        if (value == null) return "";
+
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "");
+    }
+
+    private void refreshRemoteMetadata() {
+        try {
+            remoteLine = lineInput == null
+                    ? "-"
+                    : blank(lineInput.getText().toString().trim());
+
+            remoteEquipment = equipmentInput == null
+                    ? "-"
+                    : blank(equipmentInput.getText().toString().trim());
+
+            remoteProcess = process == null || process.getSelectedItem() == null
+                    ? "-"
+                    : String.valueOf(process.getSelectedItem());
+
+            remoteMcscTotal = recipeTotalSec();
+
+            StringBuilder m = new StringBuilder("[");
+            for (int i = 0; i < recipe.size(); i++) {
+                if (i > 0) m.append(",");
+
+                RecipeUnit r = recipe.get(i);
+
+                m.append("{\"name\":\"")
+                        .append(remoteJsonEscape(r.name))
+                        .append("\",\"sec\":")
+                        .append(String.format(Locale.US, "%.3f", r.seconds))
+                        .append("}");
+            }
+            m.append("]");
+            remoteMcscJson = m.toString();
+
+        } catch (Exception ignored) {}
+    }
+
+    private void refreshRemoteEventsJson() {
+        try {
+            StringBuilder b = new StringBuilder("[");
+            int from = Math.max(0, sessionEvents.size() - 20);
+
+            for (int i = from; i < sessionEvents.size(); i++) {
+                if (b.length() > 1) b.append(",");
+
+                EventRecord r = sessionEvents.get(i);
+
+                b.append("{\"no\":")
+                        .append(r.no)
+                        .append(",\"t\":")
+                        .append(String.format(Locale.US, "%.3f", r.offsetSec))
+                        .append("}");
+            }
+
+            b.append("]");
+            remoteEventsJson = b.toString();
+
+        } catch (Exception ignored) {}
+    }
+
+    private void updateRemoteSnapshot(
+            long now,
+            float x,
+            float y,
+            float z,
+            double t
+    ) {
+        remoteRunning = running;
+        remoteCalibrating = calibrating;
+        remotePaused = processPaused;
+        remoteX = x;
+        remoteY = y;
+        remoteZ = z;
+        remoteTotal = t;
+        remotePeak = sessionPeak;
+        remoteRms = n > 0L ? Math.sqrt(sumSq / n) : 0.0;
+        remoteSpec = spec;
+
+        remoteProcessSec = startMs > 0L
+                ? (
+                        isAutoMode()
+                                ? getProcessElapsedMs(now) / 1000.0
+                                : Math.max(0.0, (now - startMs) / 1000.0)
+                )
+                : 0.0;
+
+        remoteUnit = currentTaggedUnit(now);
+        remoteTimelineState = calibrating ? "CALIBRATING" : timelineState();
+
+        refreshRemoteMetadata();
+
+        if (now - remoteLastPointMs >= 50L) {
+            remoteLastPointMs = now;
+
+            synchronized (remotePoints) {
+                remotePoints.addLast(new double[]{x, y, z, t});
+
+                while (remotePoints.size() > 160) {
+                    remotePoints.removeFirst();
+                }
+            }
+        }
+    }
+
+    private String buildRemoteStateJson() {
+        StringBuilder p = new StringBuilder("[");
+
+        synchronized (remotePoints) {
+            int i = 0;
+
+            for (double[] q : remotePoints) {
+                if (i++ > 0) p.append(",");
+
+                p.append("[")
+                        .append(String.format(Locale.US, "%.5f", q[0]))
+                        .append(",")
+                        .append(String.format(Locale.US, "%.5f", q[1]))
+                        .append(",")
+                        .append(String.format(Locale.US, "%.5f", q[2]))
+                        .append(",")
+                        .append(String.format(Locale.US, "%.5f", q[3]))
+                        .append(",")
+                        .append(String.format(Locale.US, "%.5f", q[3]))
+                        .append("]");
+            }
+        }
+
+        p.append("]");
+
+        return "{"
+                + "\"running\":" + remoteRunning + ","
+                + "\"calibrating\":" + remoteCalibrating + ","
+                + "\"paused\":" + remotePaused + ","
+                + "\"line\":\"" + remoteJsonEscape(remoteLine) + "\","
+                + "\"equipment\":\"" + remoteJsonEscape(remoteEquipment) + "\","
+                + "\"process\":\"" + remoteJsonEscape(remoteProcess) + "\","
+                + "\"unit\":\"" + remoteJsonEscape(remoteUnit) + "\","
+                + "\"timelineState\":\"" + remoteJsonEscape(remoteTimelineState) + "\","
+                + "\"x\":" + String.format(Locale.US, "%.6f", remoteX) + ","
+                + "\"y\":" + String.format(Locale.US, "%.6f", remoteY) + ","
+                + "\"z\":" + String.format(Locale.US, "%.6f", remoteZ) + ","
+                + "\"total\":" + String.format(Locale.US, "%.6f", remoteTotal) + ","
+                + "\"peak\":" + String.format(Locale.US, "%.6f", remotePeak) + ","
+                + "\"rms\":" + String.format(Locale.US, "%.6f", remoteRms) + ","
+                + "\"spec\":" + String.format(Locale.US, "%.6f", remoteSpec) + ","
+                + "\"processSec\":" + String.format(Locale.US, "%.3f", remoteProcessSec) + ","
+                + "\"mcscTotal\":" + String.format(Locale.US, "%.3f", remoteMcscTotal) + ","
+                + "\"lastImpact\":\"" + remoteJsonEscape(remoteLastImpact) + "\","
+                + "\"mcsc\":" + remoteMcscJson + ","
+                + "\"events\":" + remoteEventsJson + ","
+                + "\"points\":" + p
+                + "}";
+    }
+
+    private void showRemoteMonitorDialog() {
+        refreshRemoteMetadata();
+
+        if (remoteServer == null) {
+            remoteServer = new RemoteMonitorServer(this::buildRemoteStateJson);
+        }
+
+        if (!remoteServer.isRunning()) {
+            boolean ok = remoteServer.start();
+
+            if (!ok) {
+                new android.app.AlertDialog.Builder(this)
+                        .setTitle("REMOTE MONITOR")
+                        .setMessage(
+                                "Remote Monitor 서버를 시작하지 못했습니다.\n"
+                                        + "Wi-Fi/Hotspot 상태를 확인한 뒤 다시 시도해주세요."
+                        )
+                        .setPositiveButton("확인", null)
+                        .show();
+                return;
+            }
+        }
+
+        if (remoteButton != null) {
+            remoteButton.setText("REMOTE ON");
+            remoteButton.setBackground(bg(Color.rgb(0, 145, 105), 14));
+        }
+
+        java.util.List<String> urls = remoteServer.getAccessUrls();
+        String primary = remoteServer.getPrimaryUrl();
+
+        StringBuilder msg = new StringBuilder();
+        msg.append("READ ONLY · 같은 Wi-Fi 또는 Hotspot에서 사용\n\n");
+
+        if (urls.isEmpty()) {
+            msg.append("IP 주소를 찾지 못했습니다.\n")
+                    .append("두 폰을 같은 Wi-Fi/Hotspot에 연결한 뒤 다시 열어주세요.");
+        } else {
+            msg.append("다른 폰의 Chrome/Samsung Internet에서 아래 주소를 여세요.\n\n");
+
+            for (String u : urls) {
+                msg.append(u).append("\n");
+            }
+        }
+
+        msg.append("\nAccess Code : ")
+                .append(remoteServer.getToken())
+                .append("\n\n실시간 화면은 보기 전용입니다.");
+
+        android.app.AlertDialog dialog =
+                new android.app.AlertDialog.Builder(this)
+                        .setTitle("REMOTE MONITOR · LIVE")
+                        .setMessage(msg.toString())
+                        .setPositiveButton(
+                                "COPY URL",
+                                (d, w) -> {
+                                    if (primary == null || primary.isEmpty()) return;
+
+                                    android.content.ClipboardManager cm =
+                                            (android.content.ClipboardManager)
+                                                    getSystemService(CLIPBOARD_SERVICE);
+
+                                    cm.setPrimaryClip(
+                                            android.content.ClipData.newPlainText(
+                                                    "Remote Monitor URL",
+                                                    primary
+                                            )
+                                    );
+
+                                    Toast.makeText(
+                                            this,
+                                            "Remote URL 복사 완료",
+                                            Toast.LENGTH_SHORT
+                                    ).show();
+                                }
+                        )
+                        .setNeutralButton(
+                                "STOP REMOTE",
+                                (d, w) -> stopRemoteMonitor()
+                        )
+                        .setNegativeButton("닫기", null)
+                        .create();
+
+        dialog.show();
+    }
+
+    private void stopRemoteMonitor() {
+        if (remoteServer != null) {
+            remoteServer.stop();
+        }
+
+        if (remoteButton != null) {
+            remoteButton.setText("REMOTE VIEW");
+            remoteButton.setBackground(bg(Color.rgb(0, 125, 110), 14));
+        }
+
+        Toast.makeText(
+                this,
+                "Remote Monitor 종료",
+                Toast.LENGTH_SHORT
+        ).show();
+    }
+
     private void setupCamera() {
         if (Build.VERSION.SDK_INT >= 23
                 && checkSelfPermission(android.Manifest.permission.CAMERA)
@@ -3798,6 +4116,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
     @Override
     protected void onDestroy() {
+        stopRemoteMonitor();
         super.onDestroy();
         closeContinuousCsv();
 
