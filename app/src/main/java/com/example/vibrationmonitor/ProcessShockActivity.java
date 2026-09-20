@@ -16,6 +16,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
     private TextView status, cam, elapsed, total, peak, rms, impact, dir, last;
     private Spinner process, unit, mode;
+    private LinearLayout manualUnitRow;
     private EditText lineInput, equipmentInput;
     private ShockGraph graph;
     private ImpactTimelineView timeline;
@@ -165,33 +166,80 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         TextView bb = tv("PRE 3s + IMPACT + POST 3s · PHOTO · GRAPH · CSV · TELEGRAM", 11, Color.rgb(70, 90, 105));
         bb.setGravity(Gravity.CENTER);
+        bb.setPadding(dp(4), dp(4), dp(4), dp(5));
         root.addView(bb);
 
         android.content.SharedPreferences cp = getSharedPreferences("ShockContext", MODE_PRIVATE);
 
-        root.addView(tv("LINE", 12, Color.DKGRAY));
-        lineInput = input("예: Line 1");
+        LinearLayout configCard = new LinearLayout(this);
+        configCard.setOrientation(LinearLayout.VERTICAL);
+        configCard.setPadding(dp(8), dp(6), dp(8), dp(7));
+        configCard.setBackground(bg(Color.WHITE, 12));
+
+        // LINE / EQUIPMENT / PROCESS : one compact row
+        LinearLayout basicRow = new LinearLayout(this);
+        basicRow.setOrientation(LinearLayout.HORIZONTAL);
+        basicRow.setGravity(Gravity.CENTER_VERTICAL);
+
+        LinearLayout lineCell = new LinearLayout(this);
+        lineCell.setOrientation(LinearLayout.VERTICAL);
+        TextView lineLabel = tv("LINE", 9, Color.rgb(90, 105, 118));
+        lineLabel.setPadding(dp(4), dp(1), dp(4), 0);
+        lineCell.addView(lineLabel);
+        lineInput = input("Line");
+        lineInput.setTextSize(13);
         lineInput.setText(cp.getString("line", ""));
-        root.addView(lineInput);
+        lineCell.addView(lineInput, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(38)));
+        LinearLayout.LayoutParams lineLp =
+                new LinearLayout.LayoutParams(0, dp(58), 0.75f);
+        lineLp.setMargins(0, 0, dp(5), 0);
+        basicRow.addView(lineCell, lineLp);
 
-        root.addView(tv("EQUIPMENT", 12, Color.DKGRAY));
-        equipmentInput = input("예: Stacker #1");
+        LinearLayout equipmentCell = new LinearLayout(this);
+        equipmentCell.setOrientation(LinearLayout.VERTICAL);
+        TextView equipmentLabel = tv("EQUIPMENT", 9, Color.rgb(90, 105, 118));
+        equipmentLabel.setPadding(dp(4), dp(1), dp(4), 0);
+        equipmentCell.addView(equipmentLabel);
+        equipmentInput = input("Equip.");
+        equipmentInput.setTextSize(13);
         equipmentInput.setText(cp.getString("equipment", ""));
-        root.addView(equipmentInput);
+        equipmentCell.addView(equipmentInput, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(38)));
+        LinearLayout.LayoutParams equipmentLp =
+                new LinearLayout.LayoutParams(0, dp(58), 1.0f);
+        equipmentLp.setMargins(0, 0, dp(5), 0);
+        basicRow.addView(equipmentCell, equipmentLp);
 
-        root.addView(tv("PROCESS", 13, Color.DKGRAY));
+        LinearLayout processCell = new LinearLayout(this);
+        processCell.setOrientation(LinearLayout.VERTICAL);
+        TextView processLabel = tv("PROCESS", 9, Color.rgb(90, 105, 118));
+        processLabel.setPadding(dp(4), dp(1), dp(4), 0);
+        processCell.addView(processLabel);
         process = new Spinner(this);
         process.setAdapter(new ArrayAdapter<String>(
                 this,
                 android.R.layout.simple_spinner_dropdown_item,
                 new String[]{"STACK", "PACKAGE", "ACTIVATION"}
         ));
-        root.addView(process);
+        processCell.addView(process, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(38)));
+        basicRow.addView(
+                processCell,
+                new LinearLayout.LayoutParams(0, dp(58), 1.20f)
+        );
 
-        root.addView(tv("ANALYSIS MODE", 12, Color.DKGRAY));
+        configCard.addView(basicRow);
+
+        // ANALYSIS MODE : one row
         LinearLayout modeRow = new LinearLayout(this);
         modeRow.setOrientation(LinearLayout.HORIZONTAL);
         modeRow.setGravity(Gravity.CENTER_VERTICAL);
+        modeRow.setPadding(0, dp(2), 0, 0);
+
+        TextView modeLabel = tv("MODE", 10, Color.rgb(90, 105, 118));
+        modeLabel.setPadding(dp(4), 0, dp(4), 0);
+        modeRow.addView(modeLabel, new LinearLayout.LayoutParams(dp(48), dp(42)));
 
         mode = new Spinner(this);
         mode.setAdapter(new ArrayAdapter<String>(
@@ -199,19 +247,38 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 android.R.layout.simple_spinner_dropdown_item,
                 new String[]{"AUTO TIMELINE", "MANUAL UNIT"}
         ));
-        modeRow.addView(mode, new LinearLayout.LayoutParams(0, dp(44), 1f));
+        modeRow.addView(mode, new LinearLayout.LayoutParams(0, dp(42), 1f));
 
         recipeButton = btn("RECIPE", Color.rgb(67, 88, 108));
+        recipeButton.setTextSize(12);
         LinearLayout.LayoutParams recipeLp =
-                new LinearLayout.LayoutParams(dp(105), dp(42));
-        recipeLp.setMargins(dp(6), 0, 0, 0);
+                new LinearLayout.LayoutParams(dp(90), dp(40));
+        recipeLp.setMargins(dp(5), 0, 0, 0);
         modeRow.addView(recipeButton, recipeLp);
-        root.addView(modeRow);
+        configCard.addView(modeRow);
 
-        root.addView(tv("UNIT / ACTION", 13, Color.DKGRAY));
+        // Only shown in MANUAL UNIT mode
+        manualUnitRow = new LinearLayout(this);
+        manualUnitRow.setOrientation(LinearLayout.HORIZONTAL);
+        manualUnitRow.setGravity(Gravity.CENTER_VERTICAL);
+        manualUnitRow.setPadding(0, dp(2), 0, 0);
+
+        TextView unitLabel = tv("UNIT", 10, Color.rgb(90, 105, 118));
+        unitLabel.setPadding(dp(4), 0, dp(4), 0);
+        manualUnitRow.addView(
+                unitLabel,
+                new LinearLayout.LayoutParams(dp(48), dp(42))
+        );
+
         unit = new Spinner(this);
-        root.addView(unit);
+        manualUnitRow.addView(
+                unit,
+                new LinearLayout.LayoutParams(0, dp(42), 1f)
+        );
+        configCard.addView(manualUnitRow);
+
         units(0);
+        root.addView(configCard);
 
         segmentInfo = tv(
                 "UNIT SEGMENT : READY",
@@ -219,7 +286,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 Color.rgb(55, 75, 92)
         );
         segmentInfo.setBackground(bg(Color.WHITE, 10));
-        segmentInfo.setPadding(dp(10), dp(7), dp(10), dp(7));
+        segmentInfo.setPadding(dp(8), dp(5), dp(8), dp(5));
         root.addView(segmentInfo);
 
         LinearLayout clockRow = new LinearLayout(this);
@@ -663,7 +730,11 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         boolean auto = isAutoMode();
 
         unit.setEnabled(!auto);
+        if (manualUnitRow != null) {
+            manualUnitRow.setVisibility(auto ? View.GONE : View.VISIBLE);
+        }
         recipeButton.setEnabled(!running && auto);
+        recipeButton.setVisibility(auto ? View.VISIBLE : View.GONE);
         pauseButton.setEnabled(running && auto && !calibrating);
 
         if (timeline != null) {
