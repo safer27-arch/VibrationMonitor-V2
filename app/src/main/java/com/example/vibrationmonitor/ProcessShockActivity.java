@@ -36,6 +36,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     private long autoStopCandidateStartMs = 0L;
     private long autoResumeCandidateStartMs = 0L;
     private long autoCorrectionSuppressUntilMs = 0L;
+    private long autoResumeImpactUntilMs = 0L;
     private long autoPausedTotalMs = 0L;
     private int autoCorrectionCount = 0;
 
@@ -907,6 +908,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         autoStopCandidateStartMs = 0L;
         autoResumeCandidateStartMs = 0L;
 
+        autoResumeImpactUntilMs = now + 1500L;
+
         pauseButton.setText("PAUSE");
         status.setText(String.format(
                 Locale.US,
@@ -1497,7 +1500,15 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         eventLine = lineInput.getText().toString().trim();
         eventEquipment = equipmentInput.getText().toString().trim();
         ep = String.valueOf(process.getSelectedItem());
-        eu = currentTaggedUnit(now);
+
+        if (isAutoMode() && autoPauseActive) {
+            eu = "AUTO STOP";
+        } else if (isAutoMode() && now <= autoResumeImpactUntilMs) {
+            eu = "AUTO RESUME";
+        } else {
+            eu = currentTaggedUnit(now);
+        }
+
         eventProcessOffsetSec = isAutoMode()
                 ? getProcessElapsedMs(now) / 1000L
                 : Math.max(0L, (now - startMs) / 1000L);
@@ -1975,7 +1986,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                         java.nio.charset.StandardCharsets.UTF_8
                 )
         )) {
-            o.println("Event,Time,Line,Equipment,Process,UnitAction,Peak,RMS,DurationSec,Axis,XPeak,YPeak,ZPeak,Spec");
+            o.println("Event,Category,Time,Line,Equipment,Process,UnitAction,Peak,RMS,DurationSec,Axis,XPeak,YPeak,ZPeak,Spec");
 
             java.text.SimpleDateFormat fmt =
                     new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
@@ -1983,8 +1994,9 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             for (EventRecord r : sessionEvents) {
                 o.println(String.format(
                         Locale.US,
-                        "%d,%s,%s,%s,%s,%s,%.6f,%.6f,%.3f,%s,%.6f,%.6f,%.6f,%.6f",
+                        "%d,%s,%s,%s,%s,%s,%s,%.6f,%.6f,%.3f,%s,%.6f,%.6f,%.6f,%.6f",
                         r.no,
+                        eventCategory(r.unit),
                         fmt.format(new java.util.Date(r.timeMs)),
                         safe(r.line), safe(r.equipment), safe(r.process), safe(r.unit),
                         r.peak, r.rms, r.duration, r.axis, r.mx, r.my, r.mz, spec
@@ -2522,10 +2534,54 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         } catch (Exception ignored) {}
     }
 
+    private boolean isStopResumeUnit(String unit) {
+        if (unit == null) return false;
+
+        String u = unit.trim().toUpperCase(Locale.US);
+
+        return u.equals("AUTO STOP")
+                || u.equals("AUTO RESUME")
+                || u.equals("LINE STOP")
+                || u.equals("MANUAL STOP")
+                || u.equals("MANUAL RESUME");
+    }
+
+    private String eventCategory(String unit) {
+        return isStopResumeUnit(unit) ? "STOP_RESUME" : "PRODUCTION";
+    }
+
+    private ArrayList<EventRecord> filteredEvents(boolean stopResume) {
+        ArrayList<EventRecord> out = new ArrayList<>();
+
+        for (EventRecord r : sessionEvents) {
+            if (isStopResumeUnit(r.unit) == stopResume) {
+                out.add(r);
+            }
+        }
+
+        return out;
+    }
+
+    private EventRecord topEvent(ArrayList<EventRecord> source) {
+        EventRecord top = null;
+
+        for (EventRecord r : source) {
+            if (top == null || r.peak > top.peak) {
+                top = r;
+            }
+        }
+
+        return top;
+    }
+
     private ArrayList<UnitAggregate> buildUnitAggregates() {
         LinkedHashMap<String, UnitAggregate> map = new LinkedHashMap<>();
 
         for (UnitSegment r : unitSegments) {
+            if (isStopResumeUnit(r.unit)) {
+                continue;
+            }
+
             String key = blank(r.process) + " > " + blank(r.unit);
             UnitAggregate a = map.get(key);
 
@@ -2555,10 +2611,11 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                         ? "X"
                         : (sessionMaxY >= sessionMaxZ ? "Y" : "Z");
 
-        EventRecord top = null;
-        for (EventRecord r : sessionEvents) {
-            if (top == null || r.peak > top.peak) top = r;
-        }
+        ArrayList<EventRecord> productionEvents = filteredEvents(false);
+        ArrayList<EventRecord> stopResumeEvents = filteredEvents(true);
+
+        EventRecord top = topEvent(productionEvents);
+        EventRecord topStopResume = topEvent(stopResumeEvents);
 
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
@@ -2566,10 +2623,10 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         TextView topCard = tv(
                 top == null
-                        ? "TOP IMPACT : 없음"
+                        ? "TOP PRODUCTION IMPACT : 없음"
                         : String.format(
                                 Locale.US,
-                                "TOP IMPACT #%03d\n%s > %s\nPEAK %.3f m/s² · %s AXIS",
+                                "TOP PRODUCTION IMPACT #%03d\n%s > %s\nPEAK %.3f m/s² · %s AXIS",
                                 top.no, top.process, top.unit, top.peak, top.axis
                         ),
                 16,
@@ -2582,7 +2639,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         String summary = String.format(
                 Locale.US,
                 "측정시간  %02d:%02d:%02d\n"
-                        + "Impact  %d회\n"
+                        + "Impact  %d회 · Production %d · Stop/Resume %d\n"
                         + "최대 Peak  %.3f m/s²\n"
                         + "Session RMS  %.3f m/s²\n"
                         + "주 충격 방향  %s AXIS\n"
@@ -2593,6 +2650,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 (durationSec / 60) % 60,
                 durationSec % 60,
                 impactCount,
+                productionEvents.size(),
+                stopResumeEvents.size(),
                 sessionPeak,
                 sessionRms,
                 mainAxis,
@@ -2607,16 +2666,22 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         box.addView(tv(summary, 15, Color.DKGRAY));
 
-        if (!sessionEvents.isEmpty()) {
-            TextView chartTitle = tv("EVENT PEAK COMPARISON", 13, Color.rgb(15, 38, 61));
+        if (!productionEvents.isEmpty()) {
+            TextView chartTitle = tv(
+                    "PRODUCTION EVENT PEAK COMPARISON",
+                    13,
+                    Color.rgb(15, 38, 61)
+            );
             chartTitle.setTypeface(null, 1);
             box.addView(chartTitle);
+
             int eventChartHeight = Math.max(
                     92,
-                    Math.min(245, sessionEvents.size() * 58 + 28)
+                    Math.min(245, productionEvents.size() * 58 + 28)
             );
+
             box.addView(
-                    new SessionBarsView(this, sessionEvents),
+                    new SessionBarsView(this, productionEvents),
                     new LinearLayout.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             dp(eventChartHeight)
@@ -2624,22 +2689,71 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             );
         }
 
-        if (!unitSegments.isEmpty()) {
-            ArrayList<UnitAggregate> aggregates = buildUnitAggregates();
-            TextView unitTitle = tv("UNIT SUMMARY · PEAK / RMS / IMPACT / TIME", 13, Color.rgb(15, 38, 61));
-            unitTitle.setTypeface(null, 1);
-            box.addView(unitTitle);
-            int unitChartHeight = Math.max(
-                    98,
-                    Math.min(360, aggregates.size() * 72 + 24)
+        if (!stopResumeEvents.isEmpty()) {
+            TextView stopTitle = tv(
+                    "STOP / RESUME IMPACTS · SEPARATE FROM UNIT RANKING",
+                    13,
+                    Color.rgb(155, 95, 25)
             );
+            stopTitle.setTypeface(null, 1);
+            box.addView(stopTitle);
+
+            if (topStopResume != null) {
+                TextView stopCard = tv(
+                        String.format(
+                                Locale.US,
+                                "TOP STOP/RESUME #%03d · %s\nPEAK %.3f m/s² · %s AXIS",
+                                topStopResume.no,
+                                topStopResume.unit,
+                                topStopResume.peak,
+                                topStopResume.axis
+                        ),
+                        13,
+                        Color.rgb(110, 75, 35)
+                );
+                stopCard.setBackground(bg(Color.rgb(252, 244, 229), 10));
+                stopCard.setPadding(dp(8), dp(6), dp(8), dp(6));
+                box.addView(stopCard);
+            }
+
+            int stopChartHeight = Math.max(
+                    82,
+                    Math.min(190, stopResumeEvents.size() * 52 + 24)
+            );
+
             box.addView(
-                    new UnitSummaryView(this, aggregates),
+                    new SessionBarsView(this, stopResumeEvents),
                     new LinearLayout.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
-                            dp(unitChartHeight)
+                            dp(stopChartHeight)
                     )
             );
+        }
+
+        if (!unitSegments.isEmpty()) {
+            ArrayList<UnitAggregate> aggregates = buildUnitAggregates();
+            if (!aggregates.isEmpty()) {
+                TextView unitTitle = tv(
+                        "PRODUCTION UNIT SUMMARY · PEAK / RMS / IMPACT / TIME",
+                        13,
+                        Color.rgb(15, 38, 61)
+                );
+                unitTitle.setTypeface(null, 1);
+                box.addView(unitTitle);
+
+                int unitChartHeight = Math.max(
+                        98,
+                        Math.min(360, aggregates.size() * 72 + 24)
+                );
+
+                box.addView(
+                        new UnitSummaryView(this, aggregates),
+                        new LinearLayout.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                dp(unitChartHeight)
+                        )
+                );
+            }
         }
 
         TextView scrollHint = tv(
