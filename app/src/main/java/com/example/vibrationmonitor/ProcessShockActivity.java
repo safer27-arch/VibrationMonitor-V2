@@ -232,11 +232,13 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 Color.rgb(55, 75, 92)
         );
         processClock.setBackground(bg(Color.WHITE, 10));
-        clockRow.addView(processClock, new LinearLayout.LayoutParams(0, dp(46), 1f));
+        processClock.setTextSize(10);
+        clockRow.addView(processClock, new LinearLayout.LayoutParams(0, dp(54), 1f));
 
-        pauseButton = btn("PROCESS PAUSE", Color.rgb(230, 150, 45));
+        pauseButton = btn("PAUSE", Color.rgb(230, 150, 45));
+        pauseButton.setTextSize(12);
         LinearLayout.LayoutParams pauseLp =
-                new LinearLayout.LayoutParams(dp(130), dp(44));
+                new LinearLayout.LayoutParams(dp(112), dp(44));
         pauseLp.setMargins(dp(6), 0, 0, 0);
         clockRow.addView(pauseButton, pauseLp);
         root.addView(clockRow);
@@ -336,14 +338,15 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         }
         root.addView(scaleRow);
 
-        TextView timelineTitle = tv("IMPACT TIMELINE", 12, Color.rgb(15, 38, 61));
+        TextView timelineTitle = tv("PROCESS / IMPACT TIMELINE", 12, Color.rgb(15, 38, 61));
         timelineTitle.setTypeface(null, 1);
         root.addView(timelineTitle);
 
         timeline = new ImpactTimelineView(this);
+        timeline.setRecipe(recipe);
         root.addView(timeline, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                dp(88)
+                dp(96)
         ));
 
         dir = tv("MAIN DIRECTION : -", 16, Color.rgb(15, 38, 61));
@@ -498,6 +501,10 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         }
 
         recipe.addAll(parsed);
+
+        if (timeline != null) {
+            timeline.setRecipe(recipe);
+        }
     }
 
     private void showRecipeDialog() {
@@ -594,6 +601,38 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         return -1;
     }
 
+    private double recipeUnitStartSec(int index) {
+        double sec = 0.0;
+
+        for (int i = 0; i < recipe.size() && i < index; i++) {
+            sec += recipe.get(i).seconds;
+        }
+
+        return sec;
+    }
+
+    private double recipeUnitProgressSec(long now) {
+        if (!isAutoMode()) return 0.0;
+
+        long processMs = getProcessElapsedMs(now);
+        int idx = activeRecipeIndex(processMs);
+
+        if (idx < 0 || idx >= recipe.size()) return 0.0;
+
+        double start = recipeUnitStartSec(idx);
+        return Math.max(0.0, processMs / 1000.0 - start);
+    }
+
+    private double recipeUnitDurationSec(long now) {
+        if (!isAutoMode()) return 0.0;
+
+        int idx = activeRecipeIndex(getProcessElapsedMs(now));
+
+        if (idx < 0 || idx >= recipe.size()) return 0.0;
+
+        return recipe.get(idx).seconds;
+    }
+
     private String currentTaggedUnit(long now) {
         if (!isAutoMode()) {
             return String.valueOf(unit.getSelectedItem());
@@ -627,8 +666,12 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         recipeButton.setEnabled(!running && auto);
         pauseButton.setEnabled(running && auto && !calibrating);
 
+        if (timeline != null) {
+            timeline.setRecipe(auto ? recipe : new ArrayList<RecipeUnit>());
+        }
+
         if (!running) {
-            pauseButton.setText("PROCESS PAUSE");
+            pauseButton.setText("PAUSE");
 
             segmentInfo.setText(
                     auto
@@ -649,14 +692,14 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         if (!processPaused) {
             processPaused = true;
             processPauseStartMs = now;
-            pauseButton.setText("PROCESS RESUME");
+            pauseButton.setText("RESUME");
             status.setText("● LINE STOP / PROCESS TIME PAUSED");
             status.setTextColor(Color.rgb(255, 185, 70));
         } else {
             totalProcessPausedMs += Math.max(0L, now - processPauseStartMs);
             processPauseStartMs = 0L;
             processPaused = false;
-            pauseButton.setText("PROCESS PAUSE");
+            pauseButton.setText("PAUSE");
             status.setText("● MONITORING · AUTO TIMELINE");
             status.setTextColor(Color.rgb(80, 220, 150));
         }
@@ -824,7 +867,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         recipeButton.setEnabled(false);
         unit.setEnabled(!isAutoMode());
         pauseButton.setEnabled(false);
-        pauseButton.setText("PROCESS PAUSE");
+        pauseButton.setText("PAUSE");
         processClock.setText("REAL 00:00 · PROCESS 00:00 · CALIBRATING");
 
         if (!cameraReady) setupCamera();
@@ -856,7 +899,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         recipeButton.setEnabled(isAutoMode());
         unit.setEnabled(!isAutoMode());
         pauseButton.setEnabled(false);
-        pauseButton.setText("PROCESS PAUSE");
+        pauseButton.setText("PAUSE");
 
         saveSessionCsv();
         saveUnitSummaryCsv();
@@ -1011,6 +1054,13 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                             ? Math.max(1L, Math.round(recipeTotalSec()))
                             : Math.max(1L, (now - startMs) / 1000L)
             );
+
+            timeline.setProcessPosition(
+                    isAutoMode()
+                            ? getProcessElapsedMs(now) / 1000.0
+                            : Math.max(0.0, (now - startMs) / 1000.0),
+                    processPaused
+            );
         }
 
         if (now - lastCheckpointMs >= 15000L) {
@@ -1038,15 +1088,35 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
             long processSec = getProcessElapsedMs(now) / 1000L;
 
-            processClock.setText(String.format(
-                    Locale.US,
-                    "REAL %02d:%02d · PROCESS %02d:%02d · %s",
-                    sec / 60,
-                    sec % 60,
-                    processSec / 60,
-                    processSec % 60,
-                    processPaused ? "PAUSED" : selectedUnit
-            ));
+            if (isAutoMode()) {
+                double unitElapsed = recipeUnitProgressSec(now);
+                double unitDuration = recipeUnitDurationSec(now);
+                double unitPct = unitDuration > 0.0
+                        ? Math.min(100.0, unitElapsed / unitDuration * 100.0)
+                        : 0.0;
+
+                processClock.setText(String.format(
+                        Locale.US,
+                        "REAL %02d:%02d · PROCESS %02d:%02d\n%s · %.1f / %.1fs · %.0f%% %s",
+                        sec / 60,
+                        sec % 60,
+                        processSec / 60,
+                        processSec % 60,
+                        selectedUnit,
+                        unitElapsed,
+                        unitDuration,
+                        unitPct,
+                        processPaused ? "· PAUSED" : ""
+                ));
+            } else {
+                processClock.setText(String.format(
+                        Locale.US,
+                        "REAL %02d:%02d · MANUAL · %s",
+                        sec / 60,
+                        sec % 60,
+                        selectedUnit
+                ));
+            }
 
             long segmentSec = segmentStartMs > 0L
                     ? Math.max(
@@ -2199,8 +2269,11 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
     static class ImpactTimelineView extends View {
         private final ArrayList<EventRecord> data = new ArrayList<>();
+        private final ArrayList<RecipeUnit> recipe = new ArrayList<>();
         private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         private long durationSec = 1L;
+        private double processSec = 0.0;
+        private boolean paused = false;
 
         ImpactTimelineView(android.content.Context c) {
             super(c);
@@ -2209,12 +2282,36 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         void clear() {
             data.clear();
-            durationSec = 1L;
+            processSec = 0.0;
+            paused = false;
+            invalidate();
+        }
+
+        void setRecipe(ArrayList<RecipeUnit> source) {
+            recipe.clear();
+
+            if (source != null) {
+                recipe.addAll(source);
+            }
+
+            double total = 0.0;
+            for (RecipeUnit r : recipe) total += r.seconds;
+
+            if (total > 0.0) {
+                durationSec = Math.max(1L, Math.round(total));
+            }
+
             invalidate();
         }
 
         void setDuration(long sec) {
             durationSec = Math.max(1L, sec);
+            invalidate();
+        }
+
+        void setProcessPosition(double sec, boolean isPaused) {
+            processSec = Math.max(0.0, sec);
+            paused = isPaused;
             invalidate();
         }
 
@@ -2229,30 +2326,105 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         protected void onDraw(Canvas c) {
             super.onDraw(c);
 
-            float left = 26f;
-            float right = getWidth() - 26f;
-            float y = getHeight() * 0.58f;
+            float left = 18f;
+            float right = getWidth() - 18f;
+            float top = 22f;
+            float bottom = getHeight() - 24f;
+            float mid = (top + bottom) / 2f;
 
+            double total = 0.0;
+            for (RecipeUnit r : recipe) total += r.seconds;
+
+            if (!recipe.isEmpty() && total > 0.0) {
+                double acc = 0.0;
+
+                for (int i = 0; i < recipe.size(); i++) {
+                    RecipeUnit r = recipe.get(i);
+                    double start = acc;
+                    acc += r.seconds;
+
+                    float x1 = left + (right - left) * (float) (start / total);
+                    float x2 = left + (right - left) * (float) (acc / total);
+
+                    boolean active = processSec >= start && processSec < acc;
+
+                    p.setColor(
+                            active
+                                    ? Color.rgb(202, 226, 241)
+                                    : (i % 2 == 0
+                                            ? Color.rgb(243, 247, 250)
+                                            : Color.rgb(232, 239, 244))
+                    );
+                    c.drawRect(x1, top, x2, bottom, p);
+
+                    p.setColor(Color.rgb(145, 160, 172));
+                    p.setStrokeWidth(1.5f);
+                    c.drawLine(x1, top, x1, bottom, p);
+
+                    String label = r.name == null ? ("U" + (i + 1)) : r.name;
+                    if (label.length() > 4) label = label.substring(0, 4);
+
+                    p.setTextSize(12f);
+                    p.setColor(Color.rgb(55, 75, 92));
+                    float tw = p.measureText(label);
+                    float cx = (x1 + x2) / 2f;
+                    c.drawText(
+                            label,
+                            Math.max(x1 + 1f, cx - tw / 2f),
+                            mid + 4f,
+                            p
+                    );
+                }
+
+                p.setColor(Color.rgb(145, 160, 172));
+                p.setStrokeWidth(1.5f);
+                c.drawLine(right, top, right, bottom, p);
+            } else {
+                p.setColor(Color.rgb(240, 244, 247));
+                c.drawRect(left, top, right, bottom, p);
+            }
+
+            float px = left + (right - left)
+                    * (float) Math.min(
+                            1.0,
+                            processSec / Math.max(1.0, durationSec)
+                    );
+
+            p.setColor(
+                    paused
+                            ? Color.rgb(230, 150, 45)
+                            : Color.rgb(0, 125, 110)
+            );
             p.setStrokeWidth(4f);
-            p.setColor(Color.rgb(185, 195, 205));
-            c.drawLine(left, y, right, y, p);
-
-            p.setTextSize(22f);
-            p.setColor(Color.DKGRAY);
-            c.drawText("0s", left, y + 32f, p);
-            c.drawText(durationSec + "s", Math.max(left, right - 70f), y + 32f, p);
+            c.drawLine(px, top - 5f, px, bottom + 5f, p);
 
             for (EventRecord r : data) {
                 float x = left + (right - left)
-                        * Math.min(1f, r.offsetSec / (float) Math.max(1L, durationSec));
+                        * Math.min(
+                                1f,
+                                r.offsetSec / (float) Math.max(1L, durationSec)
+                        );
 
                 p.setColor(Color.rgb(205, 68, 72));
-                p.setStrokeWidth(5f);
-                c.drawLine(x, y - 32f, x, y + 8f, p);
+                p.setStrokeWidth(4f);
+                c.drawLine(x, top - 10f, x, bottom + 2f, p);
 
-                p.setTextSize(20f);
-                c.drawText("#" + r.no, Math.max(2f, x - 14f), y - 40f, p);
+                p.setTextSize(14f);
+                p.setColor(Color.rgb(175, 45, 50));
+                c.drawText("#" + r.no, Math.max(1f, x - 9f), top - 12f, p);
             }
+
+            p.setTextSize(13f);
+            p.setColor(Color.DKGRAY);
+            c.drawText("0s", left, getHeight() - 4f, p);
+
+            String endText = durationSec + "s";
+            c.drawText(
+                    endText,
+                    Math.max(left, right - p.measureText(endText)),
+                    getHeight() - 4f,
+                    p
+            );
         }
     }
 
