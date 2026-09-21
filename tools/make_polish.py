@@ -180,7 +180,6 @@ files = {
         "● READY": "● GOTOWY",
         "CAMERA : CHECKING...": "KAMERA : SPRAWDZANIE...",
         "LINE": "LINIA",
-        "Line": "Linia",
         "EQUIPMENT": "URZĄDZENIE",
         "PROCESS": "PROCES",
         "AUTO TIMELINE": "AUTOMATYCZNA OŚ CZASU",
