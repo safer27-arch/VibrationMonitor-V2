@@ -48,6 +48,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     private volatile String remoteMcscJson = "[]";
     private volatile String remoteLastImpact = "-";
     private volatile String remoteEventsJson = "[]";
+    private volatile String remoteLastCommand = "-";
 
     private final ArrayList<RecipeUnit> recipe = new ArrayList<>();
     private boolean processPaused = false;
@@ -3759,6 +3760,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 + "\"processSec\":" + String.format(Locale.US, "%.3f", remoteProcessSec) + ","
                 + "\"mcscTotal\":" + String.format(Locale.US, "%.3f", remoteMcscTotal) + ","
                 + "\"lastImpact\":\"" + remoteJsonEscape(remoteLastImpact) + "\","
+                + "\"lastCommand\":\"" + remoteJsonEscape(remoteLastCommand) + "\","
                 + "\"mcsc\":" + remoteMcscJson + ","
                 + "\"events\":" + remoteEventsJson + ","
                 + "\"points\":" + p
@@ -3769,7 +3771,10 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         refreshRemoteMetadata();
 
         if (remoteServer == null) {
-            remoteServer = new RemoteMonitorServer(this::buildRemoteStateJson);
+            remoteServer = new RemoteMonitorServer(
+                    this::buildRemoteStateJson,
+                    this::handleRemoteCommand
+            );
         }
 
         if (!remoteServer.isRunning()) {
@@ -3812,7 +3817,9 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         msg.append("\nAccess Code : ")
                 .append(remoteServer.getToken())
-                .append("\n\n실시간 화면은 보기 전용입니다.");
+                .append("\nControl PIN : ")
+                .append(remoteServer.getControlPin())
+                .append("\n\nSTART / PAUSE / RESUME / STOP 원격조작 가능");
 
         android.app.AlertDialog dialog =
                 new android.app.AlertDialog.Builder(this)
@@ -3849,6 +3856,124 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                         .create();
 
         dialog.show();
+    }
+
+    private void logRemoteCommand(String command, String result) {
+        remoteLastCommand = command + " · " + result;
+
+        try {
+            java.io.File f = new java.io.File(
+                    eventDir(),
+                    "REMOTE_COMMAND_LOG.csv"
+            );
+
+            boolean newFile = !f.exists();
+
+            try (java.io.FileOutputStream fos =
+                         new java.io.FileOutputStream(f, true);
+                 java.io.OutputStreamWriter osw =
+                         new java.io.OutputStreamWriter(
+                                 fos,
+                                 java.nio.charset.StandardCharsets.UTF_8
+                         );
+                 java.io.PrintWriter o =
+                         new java.io.PrintWriter(osw)) {
+
+                if (newFile) {
+                    o.println(
+                            "DateTime,Line,Equipment,Process,Command,Result"
+                    );
+                }
+
+                String ts = new java.text.SimpleDateFormat(
+                        "yyyy-MM-dd HH:mm:ss.SSS",
+                        Locale.US
+                ).format(new java.util.Date());
+
+                o.println(
+                        safe(ts)
+                                + ","
+                                + safe(remoteLine)
+                                + ","
+                                + safe(remoteEquipment)
+                                + ","
+                                + safe(remoteProcess)
+                                + ","
+                                + safe(command)
+                                + ","
+                                + safe(result)
+                );
+            }
+
+        } catch (Exception ignored) {}
+    }
+
+    private String handleRemoteCommand(String command) {
+        final String cmd = command == null
+                ? ""
+                : command.trim().toLowerCase(Locale.US);
+
+        if (!cmd.equals("start")
+                && !cmd.equals("stop")
+                && !cmd.equals("pause")
+                && !cmd.equals("resume")) {
+            logRemoteCommand(cmd, "REJECTED");
+            return "UNKNOWN COMMAND";
+        }
+
+        runOnUiThread(() -> {
+            String result = "UNKNOWN";
+
+            try {
+                if ("start".equals(cmd)) {
+                    if (running) {
+                        result = "ALREADY RUNNING";
+                    } else {
+                        startMon();
+                        result = "STARTED";
+                    }
+
+                } else if ("stop".equals(cmd)) {
+                    if (!running) {
+                        result = "ALREADY STOPPED";
+                    } else {
+                        stopMon();
+                        result = "STOPPED";
+                    }
+
+                } else if ("pause".equals(cmd)) {
+                    if (!running || !isAutoMode()) {
+                        result = "PAUSE NOT AVAILABLE";
+                    } else if (processPaused) {
+                        result = "ALREADY PAUSED";
+                    } else {
+                        toggleProcessPause();
+                        result = "PAUSED";
+                    }
+
+                } else if ("resume".equals(cmd)) {
+                    if (!running || !isAutoMode()) {
+                        result = "RESUME NOT AVAILABLE";
+                    } else if (!processPaused) {
+                        result = "ALREADY RUNNING";
+                    } else {
+                        toggleProcessPause();
+                        result = "RESUMED";
+                    }
+                }
+
+                refreshRemoteMetadata();
+                logRemoteCommand(cmd.toUpperCase(Locale.US), result);
+
+            } catch (Exception e) {
+                logRemoteCommand(
+                        cmd.toUpperCase(Locale.US),
+                        "ERROR"
+                );
+            }
+        });
+
+        return "COMMAND SENT · " + cmd.toUpperCase(Locale.US);
     }
 
     private void stopRemoteMonitor() {

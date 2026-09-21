@@ -24,24 +24,32 @@ public class RemoteMonitorServer {
         String stateJson();
     }
 
+    public interface CommandHandler {
+        String handleCommand(String command);
+    }
+
     private static final int PORT = 8765;
 
     private final StateProvider provider;
+    private final CommandHandler commandHandler;
     private final SecureRandom random = new SecureRandom();
 
     private volatile boolean running = false;
     private volatile ServerSocket serverSocket = null;
     private volatile Thread serverThread = null;
     private volatile String token = "";
+    private volatile String controlPin = "";
 
-    public RemoteMonitorServer(StateProvider provider) {
+    public RemoteMonitorServer(StateProvider provider, CommandHandler commandHandler) {
         this.provider = provider;
+        this.commandHandler = commandHandler;
     }
 
     public synchronized boolean start() {
         if (running) return true;
 
         token = String.format(Locale.US, "%06d", random.nextInt(1_000_000));
+        controlPin = String.format(Locale.US, "%06d", random.nextInt(1_000_000));
 
         try {
             final ServerSocket ss = new ServerSocket();
@@ -63,7 +71,6 @@ public class RemoteMonitorServer {
 
     public synchronized void stop() {
         running = false;
-
         try {
             if (serverSocket != null) serverSocket.close();
         } catch (Exception ignored) {}
@@ -78,6 +85,10 @@ public class RemoteMonitorServer {
 
     public String getToken() {
         return token;
+    }
+
+    public String getControlPin() {
+        return controlPin;
     }
 
     public String getPrimaryUrl() {
@@ -160,9 +171,7 @@ public class RemoteMonitorServer {
             if (request == null || request.trim().isEmpty()) return;
 
             String line;
-            while ((line = in.readLine()) != null && !line.isEmpty()) {
-                // Drain HTTP headers.
-            }
+            while ((line = in.readLine()) != null && !line.isEmpty()) {}
 
             String[] first = request.split(" ");
             if (first.length < 2 || !"GET".equals(first[0])) {
@@ -188,19 +197,33 @@ public class RemoteMonitorServer {
             }
 
             if (!token.equals(requestToken)) {
-                send(
-                        out,
-                        403,
-                        "text/html; charset=utf-8",
-                        "<!doctype html><meta charset='utf-8'><h3>REMOTE MONITOR</h3>"
-                                + "<p>Access code가 맞지 않습니다.</p>"
-                );
+                send(out, 403, "application/json; charset=utf-8",
+                        "{\"ok\":false,\"message\":\"Access denied\"}");
                 return;
             }
 
             if ("/state".equals(path)) {
                 String body = provider == null ? "{}" : provider.stateJson();
                 send(out, 200, "application/json; charset=utf-8", body);
+                return;
+            }
+
+            if ("/control".equals(path)) {
+                String pin = queryParam(query, "pin");
+                String command = queryParam(query, "cmd");
+
+                if (!controlPin.equals(pin)) {
+                    send(out, 403, "application/json; charset=utf-8",
+                            "{\"ok\":false,\"message\":\"Wrong control PIN\"}");
+                    return;
+                }
+
+                String result = commandHandler == null
+                        ? "CONTROL NOT AVAILABLE"
+                        : commandHandler.handleCommand(command);
+
+                send(out, 200, "application/json; charset=utf-8",
+                        "{\"ok\":true,\"message\":\"" + jsonEscape(result) + "\"}");
                 return;
             }
 
@@ -228,6 +251,15 @@ public class RemoteMonitorServer {
             }
         }
         return "";
+    }
+
+    private String jsonEscape(String s) {
+        if (s == null) return "";
+
+        return s.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "");
     }
 
     private void send(
@@ -273,9 +305,13 @@ public class RemoteMonitorServer {
                 + "canvas{width:100%;height:210px;background:white;border-radius:10px}"
                 + "#tl{height:92px}.small{font-size:12px;color:#5d7181}"
                 + ".live{color:#14b878}.stop{color:#e0a02d}.warn{color:#f0ad35}.err{color:#e05c61}"
+                + ".ctl{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}"
+                + ".btn{border:0;border-radius:10px;padding:13px 8px;font-weight:700;color:white;font-size:14px}"
+                + ".start{background:#009169}.pause{background:#e6962d}.resume{background:#2f7ca8}.stopb{background:#be3737}"
+                + "input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #cad4dc;border-radius:8px;font-size:16px}"
                 + "</style></head><body><div class='wrap'>"
                 + "<div class='head'><div style='font-size:24px;font-weight:800'>PROCESS SHOCK REMOTE</div>"
-                + "<div class='sub'>READ ONLY · Wi-Fi / Hotspot Live Monitor</div>"
+                + "<div class='sub'>VIEW + CONTROL · Wi-Fi / Hotspot</div>"
                 + "<div id='st' class='status'>CONNECTING...</div>"
                 + "<div id='age' class='sub'>Last update : waiting...</div></div>"
                 + "<div class='wide'><b id='ctx'>-</b><div class='small' id='clock'>-</div></div>"
@@ -293,14 +329,28 @@ public class RemoteMonitorServer {
                 + "<canvas id='g'></canvas></div>"
                 + "<div class='wide'><b>MCSC / IMPACT TIMELINE</b><div class='small' id='mcscTxt'>-</div>"
                 + "<canvas id='tl'></canvas></div>"
+                + "<div class='wide'><b>REMOTE CONTROL</b>"
+                + "<div class='small' style='margin:5px 0'>Control PIN required · STOP asks confirmation</div>"
+                + "<input id='pin' inputmode='numeric' pattern='[0-9]*' maxlength='6' placeholder='6-digit Control PIN'>"
+                + "<div class='ctl'>"
+                + "<button class='btn start' onclick=\"cmd('start')\">START MONITORING</button>"
+                + "<button class='btn pause' onclick=\"cmd('pause')\">PAUSE</button>"
+                + "<button class='btn resume' onclick=\"cmd('resume')\">RESUME</button>"
+                + "<button class='btn stopb' onclick=\"stopCmd()\">STOP & ANALYZE</button>"
+                + "</div><div id='ctlmsg' class='small' style='margin-top:8px'>-</div></div>"
                 + "<div class='wide small'><b>LAST IMPACT</b><div id='last'>-</div>"
-                + "<div style='margin-top:6px'>Browser refresh: 0.2 s · Sensor data remains stored on equipment phone.</div>"
+                + "<div style='margin-top:6px'>Browser refresh: 0.25 s · Remote commands are logged on equipment phone.</div>"
                 + "</div></div>"
                 + "<script>"
                 + "const k=new URLSearchParams(location.search).get('k')||'';"
                 + "const $=id=>document.getElementById(id);"
                 + "let lastOk=0,failCount=0;"
                 + "function ageText(){if(!lastOk)return 'Last update : waiting...';let a=(Date.now()-lastOk)/1000;return 'Last update : '+a.toFixed(1)+'s ago'}"
+                + "async function cmd(c){let pin=$('pin').value.trim();if(pin.length!==6){$('ctlmsg').textContent='Control PIN 6자리를 입력하세요.';return}"
+                + "try{let r=await fetch('/control?k='+encodeURIComponent(k)+'&pin='+encodeURIComponent(pin)+'&cmd='+encodeURIComponent(c),{cache:'no-store'});"
+                + "let j=await r.json();$('ctlmsg').textContent=(j.ok?'OK · ':'FAILED · ')+(j.message||'')}"
+                + "catch(e){$('ctlmsg').textContent='CONTROL CONNECTION ERROR'}}"
+                + "function stopCmd(){if(confirm('STOP & ANALYZE를 원격 실행하시겠습니까?'))cmd('stop')}"
                 + "function fit(c,h){let d=devicePixelRatio||1;c.width=Math.max(320,c.clientWidth*d);c.height=h*d;return d}"
                 + "function graph(s){let c=$('g'),d=fit(c,210),q=c.getContext('2d'),w=c.width,h=c.height;"
                 + "q.clearRect(0,0,w,h);let pts=s.points||[];let max=Math.max(3,s.spec*1.5);"
@@ -326,16 +376,14 @@ public class RemoteMonitorServer {
                 + "async function poll(){try{let r=await fetch('/state?k='+encodeURIComponent(k),{cache:'no-store'});if(!r.ok)throw 0;let s=await r.json();"
                 + "lastOk=Date.now();failCount=0;"
                 + "$('st').textContent=s.calibrating?'● CALIBRATING':(s.running?'● LIVE MONITORING':'● READY / STOPPED');"
-                + "$('st').className='status '+(s.running?'live':'stop');"
-                + "$('age').textContent=ageText();"
+                + "$('st').className='status '+(s.running?'live':'stop');$('age').textContent=ageText();"
                 + "$('ctx').textContent=(s.line||'-')+' / '+(s.equipment||'-')+' / '+(s.process||'-')+' / '+(s.unit||'-');"
                 + "$('clock').textContent='PROCESS '+Number(s.processSec).toFixed(1)+'s / MCSC '+Number(s.mcscTotal).toFixed(1)+'s · '+(s.timelineState||'-');"
                 + "$('total').textContent=Number(s.total).toFixed(3);$('peak').textContent=Number(s.peak).toFixed(3);$('rms').textContent=Number(s.rms).toFixed(3);"
                 + "$('x').textContent=Number(s.x).toFixed(3);$('y').textContent=Number(s.y).toFixed(3);$('z').textContent=Number(s.z).toFixed(3);"
                 + "$('mcscTxt').textContent='Unit '+(s.unit||'-')+' · '+Number(s.processSec).toFixed(1)+'s / '+Number(s.mcscTotal).toFixed(1)+'s';"
                 + "$('last').textContent=s.lastImpact||'-';graph(s);timeline(s)}"
-                + "catch(e){failCount++;let age=lastOk?(Date.now()-lastOk)/1000:999;"
-                + "$('age').textContent=ageText();"
+                + "catch(e){failCount++;let age=lastOk?(Date.now()-lastOk)/1000:999;$('age').textContent=ageText();"
                 + "if(age<3.0||failCount<5){$('st').textContent='● RECONNECTING...';$('st').className='status warn'}"
                 + "else{$('st').textContent='● CONNECTION LOST · RETRYING';$('st').className='status err'}}"
                 + "finally{setTimeout(poll,250)}}"
