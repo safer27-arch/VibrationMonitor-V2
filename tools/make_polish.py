@@ -344,5 +344,20 @@ for rel, mapping in files.items():
     for old in sorted(mapping, key=len, reverse=True):
         text = text.replace(old, mapping[old])
 
+    # FINAL_IDENTIFIER_REPAIR_V3
+    identifier_repairs = {
+        "TYPE_TEXT_FLAG_MULTI_LINIA": "TYPE_TEXT_FLAG_MULTI_LINE",
+        "LiniaarLayout": "LinearLayout",
+        "setSingleLinia": "setSingleLine",
+        "setMinLinias": "setMinLines",
+        "drawLinia": "drawLine",
+        "readLinia": "readLine",
+        "eventLinia": "eventLine",
+        "headerLinia": "headerLine",
+        "remoteLinia": "remoteLine",
+    }
+    for bad_name, good_name in identifier_repairs.items():
+        text = text.replace(bad_name, good_name)
+
     path.write_text(text, encoding="utf-8")
     print("PL translated:", rel)
