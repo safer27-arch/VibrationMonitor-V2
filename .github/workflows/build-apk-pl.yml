@@ -1,0 +1,129 @@
+name: Build Polish Android APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get source
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Restore fixed signing keystore
+        env:
+          VIBRATION_KEYSTORE_BASE64: ${{ secrets.VIBRATION_KEYSTORE_BASE64 }}
+          VIBRATION_KEYSTORE_PASSWORD: ${{ secrets.VIBRATION_KEYSTORE_PASSWORD }}
+          VIBRATION_KEY_ALIAS: ${{ secrets.VIBRATION_KEY_ALIAS }}
+        run: |
+          test -n "$VIBRATION_KEYSTORE_BASE64"
+          echo "$VIBRATION_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/vibration-release.jks"
+          keytool -list -keystore "$RUNNER_TEMP/vibration-release.jks" -storepass "$VIBRATION_KEYSTORE_PASSWORD" -alias "$VIBRATION_KEY_ALIAS" >/dev/null
+
+      - name: Apply Polish translation
+        run: python tools/make_polish.py
+
+      - name: Set Polish app label
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path("app/src/main/AndroidManifest.xml")
+          s=p.read_text(encoding="utf-8")
+          s=s.replace('android:label="Vibration Monitor"', 'android:label="Monitor Wibracji PL"')
+          p.write_text(s,encoding="utf-8")
+          PY
+
+      - name: Repair Android project - Polish variant
+        run: |
+          mkdir -p app
+
+          cat > build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application' version '8.7.3' apply false
+          }
+          EOF
+
+          cat > settings.gradle <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+
+          rootProject.name = 'VibrationMonitorPL'
+          include ':app'
+          EOF
+
+          cat > app/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+
+          android {
+              namespace 'com.example.vibrationmonitor'
+              compileSdk 35
+
+              signingConfigs {
+                  release {
+                      storeFile file(System.getenv('VIBRATION_KEYSTORE_FILE'))
+                      storePassword System.getenv('VIBRATION_KEYSTORE_PASSWORD')
+                      keyAlias System.getenv('VIBRATION_KEY_ALIAS')
+                      keyPassword System.getenv('VIBRATION_KEYSTORE_PASSWORD')
+                  }
+              }
+
+              defaultConfig {
+                  applicationId 'com.example.vibrationmonitor.v2.pl'
+                  minSdk 26
+                  targetSdk 35
+                  versionCode 45
+                  versionName '4.5-PL-V4.4-FEATURES'
+              }
+
+              buildTypes {
+                  debug {
+                      signingConfig signingConfigs.release
+                  }
+              }
+          }
+          EOF
+
+      - name: Build Polish APK
+        env:
+          VIBRATION_KEYSTORE_FILE: ${{ runner.temp }}/vibration-release.jks
+          VIBRATION_KEYSTORE_PASSWORD: ${{ secrets.VIBRATION_KEYSTORE_PASSWORD }}
+          VIBRATION_KEY_ALIAS: ${{ secrets.VIBRATION_KEY_ALIAS }}
+        run: gradle :app:assembleDebug
+
+      - name: Upload Polish APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VibrationMonitor-PL-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
