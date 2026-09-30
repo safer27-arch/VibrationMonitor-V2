@@ -50,7 +50,7 @@ def first_argument(s,opening):
 def ui_boundaries(s):
     msk=masked(s);changes=[]
     widgets={'TextView':'LocalizedTextView','Button':'LocalizedButton','CheckBox':'LocalizedCheckBox','EditText':'LocalizedEditText','ArrayAdapter':'LocalizedArrayAdapter'}
-    for m in re.finditer(r'\bnew\s+(?:android\.widget\.)?(TextView|Button|CheckBox|EditText|ArrayAdapter)\b',msk):
+    for m in re.finditer(r'\bnew\s+(?:android\.widget\.)?(TextView|Button|CheckBox|EditText|ArrayAdapter)\b(?=\s*(?:<[^;{}()]*>\s*)?\()',msk):
         changes.append((m.start(),m.end(),'new '+widgets[m.group(1)]))
     for m in re.finditer(r'\bnew\s+(?:android\.app\.)?AlertDialog\.Builder\b',msk):changes.append((m.start(),m.end(),'new LocalizedDialog'))
     for m in re.finditer(r'\b(?:android\.widget\.)?Toast\.makeText\b',msk):changes.append((m.start(),m.end(),'LocalizedToast.makeText'))

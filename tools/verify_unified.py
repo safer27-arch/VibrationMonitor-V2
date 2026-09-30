@@ -16,6 +16,8 @@ def specifiers(s):
     return [m.group() for m in FORMAT.finditer(s) if m.group() not in ('%%','%n')]
 
 def main():
+    from check_ui_constructor_boundary import run_checks
+    run_checks(check)
     catalog=json.loads((ROOT/'app/src/main/assets/unified_i18n.json').read_text(encoding='utf-8'))
     check(len(catalog)>=400,'Incomplete translation catalogue')
     for key,values in catalog.items():
@@ -36,6 +38,10 @@ def main():
     check('"ko","en","pl"' in language,'Language codes not configured')
     check('recreate(' not in language and 'startMon(' not in language,'Language changes must not restart recording')
     source=(J/'ProcessShockActivity.java').read_text(encoding='utf-8')
+    check('new LocalizedTextView[]{peak, rms, impact}' not in source,
+          'PEAK/RMS/IMPACT array must retain TextView element type')
+    check('new TextView[]{peak, rms, impact}' in source,
+          'Expected type-safe PEAK/RMS/IMPACT card array missing')
     for invariant in ('DateTime,RealElapsedMs,ProcessElapsedMs,ProcessPaused,TimelineState,',
                       'Line,Equipment,Process,UnitAction,X,Y,Z,Total,Spec',
                       '"ProcessElapsedMs"','"TimelineState"','"Total"',

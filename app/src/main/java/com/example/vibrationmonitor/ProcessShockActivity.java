@@ -432,7 +432,7 @@ public class ProcessShockActivity extends UnifiedActivity implements SensorEvent
         rms = tv("RMS\n0.000", 16, Color.rgb(15, 38, 61));
         impact = tv("IMPACT\n0", 16, Color.rgb(15, 38, 61));
 
-        for (TextView v : new LocalizedTextView[]{peak, rms, impact}) {
+        for (TextView v : new TextView[]{peak, rms, impact}) {
             v.setGravity(Gravity.CENTER);
             v.setBackground(bg(Color.WHITE, 12));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(74), 1f);
