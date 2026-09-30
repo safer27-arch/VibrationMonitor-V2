@@ -9,7 +9,7 @@ import java.io.*;
 import java.text.*;
 import java.util.*;
 
-public class StatisticsActivity extends Activity {
+public class StatisticsActivity extends UnifiedActivity {
 
     private LinearLayout root;
     private LinearLayout summaryBox;
@@ -51,14 +51,14 @@ public class StatisticsActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(dp(16), dp(16), dp(16), dp(100));
 
-        TextView title = new TextView(this);
+        TextView title = new LocalizedTextView(this);
         title.setText("진동 통계 대시보드");
         title.setTextSize(28);
         title.setGravity(Gravity.CENTER);
         title.setPadding(0, 0, 0, dp(10));
         root.addView(title);
 
-        TextView specText = new TextView(this);
+        TextView specText = new LocalizedTextView(this);
         specText.setText(String.format(Locale.US,
                 "현재 SPEC : %.2f m/s²", spec));
         specText.setTextSize(18);
@@ -67,13 +67,13 @@ public class StatisticsActivity extends Activity {
         LinearLayout periodRow = new LinearLayout(this);
         periodRow.setOrientation(LinearLayout.HORIZONTAL);
 
-        Button today = new Button(this);
+        Button today = new LocalizedButton(this);
         today.setText("오늘");
 
-        Button week = new Button(this);
+        Button week = new LocalizedButton(this);
         week.setText("7일");
 
-        Button month = new Button(this);
+        Button month = new LocalizedButton(this);
         month.setText("30일");
 
         LinearLayout.LayoutParams bp =
@@ -98,7 +98,7 @@ public class StatisticsActivity extends Activity {
         week.setOnClickListener(v -> showPeriod(7));
         month.setOnClickListener(v -> showPeriod(30));
 
-        Button back = new Button(this);
+        Button back = new LocalizedButton(this);
         back.setText("돌아가기");
         back.setOnClickListener(v -> finish());
         root.addView(back);
@@ -120,13 +120,13 @@ public class StatisticsActivity extends Activity {
                 days == 7 ? "최근 7일" :
                 "최근 30일";
 
-        TextView period = new TextView(this);
+        TextView period = new LocalizedTextView(this);
         period.setText("\n조회 기간 : " + periodName);
         period.setTextSize(20);
         summaryBox.addView(period);
 
         if (events.isEmpty()) {
-            TextView empty = new TextView(this);
+            TextView empty = new LocalizedTextView(this);
             empty.setText("\n해당 기간에 저장된 이벤트가 없습니다.");
             empty.setTextSize(18);
             summaryBox.addView(empty);
@@ -166,7 +166,7 @@ public class StatisticsActivity extends Activity {
             statusColor = Color.RED;
         }
 
-        TextView statusText = new TextView(this);
+        TextView statusText = new LocalizedTextView(this);
         statusText.setText("판정 : " + status);
         statusText.setTextSize(26);
         statusText.setTextColor(statusColor);
@@ -184,7 +184,7 @@ public class StatisticsActivity extends Activity {
         addSummary("SPEC 초과율",
                 String.format(Locale.US, "%.1f %%", overRate));
 
-        TextView trendTitle = new TextView(this);
+        TextView trendTitle = new LocalizedTextView(this);
         trendTitle.setText("\n날짜별 MAX / AVG Trend");
         trendTitle.setTextSize(20);
         chartBox.addView(trendTitle);
@@ -196,7 +196,7 @@ public class StatisticsActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(330)));
         chartBox.addView(chart);
 
-        TextView dayTitle = new TextView(this);
+        TextView dayTitle = new LocalizedTextView(this);
         dayTitle.setText("\n날짜별 요약");
         dayTitle.setTextSize(20);
         chartBox.addView(dayTitle);
@@ -204,7 +204,7 @@ public class StatisticsActivity extends Activity {
         for (int i = daysData.size() - 1; i >= 0; i--) {
             DayData d = daysData.get(i);
 
-            TextView row = new TextView(this);
+            TextView row = new LocalizedTextView(this);
             row.setText(
                     d.label +
                     String.format(Locale.US,
@@ -227,7 +227,7 @@ public class StatisticsActivity extends Activity {
     }
 
     private void addSummary(String name, String value) {
-        TextView t = new TextView(this);
+        TextView t = new LocalizedTextView(this);
         t.setText(name + " : " + value);
         t.setTextSize(18);
         t.setPadding(0, dp(4), 0, dp(4));
@@ -442,9 +442,9 @@ public class StatisticsActivity extends Activity {
                 double label =
                         maxY * (4 - i) / 4.0;
 
-                c.drawText(
+                c.drawText(AppLanguage.text(
                         String.format(Locale.US,
-                                "%.1f", label),
+                                "%.1f", label)),
                         5, y + 8, textPaint);
             }
 
@@ -456,9 +456,9 @@ public class StatisticsActivity extends Activity {
             c.drawLine(left, specY,
                     right, specY, specPaint);
 
-            c.drawText(
+            c.drawText(AppLanguage.text(
                     String.format(Locale.US,
-                            "SPEC %.2f", spec),
+                            "SPEC %.2f", spec)),
                     left + 8,
                     Math.max(top + 25, specY - 7),
                     textPaint);
@@ -504,7 +504,7 @@ public class StatisticsActivity extends Activity {
                 c.rotate(-35,
                         x, bottom + 45);
 
-                c.drawText(d.label,
+                c.drawText(AppLanguage.text(d.label),
                         x - 22,
                         bottom + 45,
                         textPaint);
@@ -515,10 +515,10 @@ public class StatisticsActivity extends Activity {
             c.drawPath(maxPath, maxPaint);
             c.drawPath(avgPath, avgPaint);
 
-            c.drawText("MAX",
+            c.drawText(AppLanguage.text("MAX"),
                     left, top - 12, maxPaint);
 
-            c.drawText("AVG",
+            c.drawText(AppLanguage.text("AVG"),
                     left + 85, top - 12, avgPaint);
         }
     }

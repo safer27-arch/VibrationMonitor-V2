@@ -24,7 +24,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Locale;
 
-public class MainActivity extends Activity implements SensorEventListener {
+public class MainActivity extends UnifiedActivity implements SensorEventListener {
 
     private SensorManager sensorManager;
     private Sensor accelerometer;
@@ -123,13 +123,13 @@ public class MainActivity extends Activity implements SensorEventListener {
         root.setPadding(30, 25, 30, 30);
         root.setBackgroundColor(Color.rgb(244,247,250));
 
-        TextView title = new TextView(this);
+        TextView title = new LocalizedTextView(this);
         title.setText("Vibration Monitor");
         title.setTextSize(28);
         title.setTextColor(Color.BLACK);
         title.setGravity(Gravity.CENTER);
 
-        TextView sensorStatus = new TextView(this);
+        TextView sensorStatus = new LocalizedTextView(this);
         sensorStatus.setText(
                 accelerometer != null
                         ? "가속도 센서 준비 완료"
@@ -139,14 +139,14 @@ public class MainActivity extends Activity implements SensorEventListener {
         sensorStatus.setGravity(Gravity.CENTER);
         sensorStatus.setPadding(0, 5, 0, 10);
 
-        locationText = new TextView(this);
+        locationText = new LocalizedTextView(this);
         locationText.setText("GPS : 위치 확인 대기 중");
         locationText.setTextSize(15);
         locationText.setGravity(Gravity.CENTER);
         locationText.setTextColor(Color.DKGRAY);
         locationText.setPadding(0, 4, 0, 10);
 
-        cameraText = new TextView(this);
+        cameraText = new LocalizedTextView(this);
         cameraText.setText("카메라 : 준비 중...");
         cameraText.setTextSize(15);
         cameraText.setGravity(Gravity.CENTER);
@@ -154,7 +154,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         cameraText.setPadding(0, 2, 0, 10);
 
         // 사용 건물 선택
-        TextView buildingLabel = new TextView(this);
+        TextView buildingLabel = new LocalizedTextView(this);
         buildingLabel.setText("사용 건물");
         buildingLabel.setTextSize(18);
         buildingLabel.setTextColor(Color.DKGRAY);
@@ -174,7 +174,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         };
 
         android.widget.ArrayAdapter<String> buildingAdapter =
-                new android.widget.ArrayAdapter<>(
+                new LocalizedArrayAdapter<>(
                         this,
                         android.R.layout.simple_spinner_item,
                         buildings
@@ -281,25 +281,25 @@ public class MainActivity extends Activity implements SensorEventListener {
         TextView thresholdLabel =
                 createValueText("SPEC / Threshold");
 
-        thresholdInput = new EditText(this);
+        thresholdInput = new LocalizedEditText(this);
         float savedSpec = getSharedPreferences("VibrationSettings", MODE_PRIVATE).getFloat("spec", 2.0f);
         thresholdInput.setText(String.valueOf(savedSpec));
         thresholdInput.setTextSize(20);
-        thresholdInput.setHint("예: 2.0");
+        UiHints.set(thresholdInput, "예: 2.0");
 
         thresholdInput.setInputType(
                 android.text.InputType.TYPE_CLASS_NUMBER |
                 android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
         );
 
-        alarmText = new TextView(this);
+        alarmText = new LocalizedTextView(this);
         alarmText.setText("상태 : 정상");
         alarmText.setTextSize(22);
         alarmText.setGravity(Gravity.CENTER);
         alarmText.setTextColor(Color.rgb(0, 130, 0));
         alarmText.setPadding(10, 20, 10, 20);
 
-        eventText = new TextView(this);
+        eventText = new LocalizedTextView(this);
         eventText.setText(
                 "이벤트 : 0회\n최근 3초 데이터 대기 중"
         );
@@ -308,7 +308,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         eventText.setTextColor(Color.DKGRAY);
         eventText.setPadding(10, 10, 10, 20);
 
-        Button specSaveButton = new Button(this);
+        Button specSaveButton = new LocalizedButton(this);
         specSaveButton.setText("SPEC 저장 / 적용");
         specSaveButton.setOnClickListener(v -> {
             try {
@@ -317,7 +317,7 @@ public class MainActivity extends Activity implements SensorEventListener {
                 getSharedPreferences("VibrationSettings", MODE_PRIVATE)
                         .edit().putFloat("spec", (float)value).apply();
                 graph.setThreshold(value);
-                android.widget.Toast.makeText(
+                LocalizedToast.makeText(
                         this,
                         String.format(Locale.US, "SPEC %.2f m/s² 저장 완료", value),
                         android.widget.Toast.LENGTH_SHORT
@@ -326,7 +326,7 @@ public class MainActivity extends Activity implements SensorEventListener {
                 float oldValue = getSharedPreferences("VibrationSettings", MODE_PRIVATE)
                         .getFloat("spec", 2.0f);
                 thresholdInput.setText(String.valueOf(oldValue));
-                android.widget.Toast.makeText(
+                LocalizedToast.makeText(
                         this,
                         "0보다 큰 숫자를 입력하세요.",
                         android.widget.Toast.LENGTH_SHORT
@@ -336,7 +336,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         TextView emailLabel = createValueText("알람 수신 이메일");
 
-        emailInput = new EditText(this);
+        emailInput = new LocalizedEditText(this);
         emailInput.setText(
                 getSharedPreferences(
                         "VibrationSettings",
@@ -346,14 +346,14 @@ public class MainActivity extends Activity implements SensorEventListener {
                         ""
                 )
         );
-        emailInput.setHint("예: name@gmail.com");
+        UiHints.set(emailInput, "예: name@gmail.com");
         emailInput.setTextSize(18);
         emailInput.setInputType(
                 android.text.InputType.TYPE_CLASS_TEXT |
                 android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
         );
 
-        Button emailSaveButton = new Button(this);
+        Button emailSaveButton = new LocalizedButton(this);
         emailSaveButton.setText("이메일 저장");
 
         emailSaveButton.setOnClickListener(v -> {
@@ -374,7 +374,7 @@ public class MainActivity extends Activity implements SensorEventListener {
             )
             .apply();
 
-            android.widget.Toast.makeText(
+            LocalizedToast.makeText(
                     this,
                     email.isEmpty()
                             ? "이메일 주소가 비어 있습니다."
@@ -383,25 +383,25 @@ public class MainActivity extends Activity implements SensorEventListener {
             ).show();
         });
 
-        Button startButton = new Button(this);
+        Button startButton = new LocalizedButton(this);
         startButton.setText("측정 시작");
 
-        Button stopButton = new Button(this);
+        Button stopButton = new LocalizedButton(this);
         stopButton.setText("측정 중지");
 
-        Button resetButton = new Button(this);
+        Button resetButton = new LocalizedButton(this);
         resetButton.setText("값 초기화");
 
-        Button csvButton = new Button(this);
+        Button csvButton = new LocalizedButton(this);
         csvButton.setText("저장된 CSV 파일");
 
-        Button processShockButton = new Button(this);
+        Button processShockButton = new LocalizedButton(this);
         processShockButton.setText("공정 충격 분석 / PROCESS SHOCK");
         processShockButton.setOnClickListener(v -> startActivity(
                 new android.content.Intent(this, ProcessShockActivity.class)
         ));
 
-        Button historyButton = new Button(this);
+        Button historyButton = new LocalizedButton(this);
         historyButton.setText("진동 이력 관리");
         historyButton.setOnClickListener(v -> {
             android.content.Intent intent =
@@ -413,17 +413,17 @@ public class MainActivity extends Activity implements SensorEventListener {
             java.io.File dir = new java.io.File(getExternalFilesDir(null), "VibrationData");
             java.io.File[] files = dir.listFiles();
             if (files == null || files.length == 0) {
-                new android.app.AlertDialog.Builder(this).setTitle("저장된 CSV 파일").setMessage("저장된 CSV 파일이 없습니다.").setPositiveButton("확인", null).show();
+                new LocalizedDialog(this).setTitle("저장된 CSV 파일").setMessage("저장된 CSV 파일이 없습니다.").setPositiveButton("확인", null).show();
                 return;
             }
             java.util.ArrayList<String> names = new java.util.ArrayList<>();
             for (java.io.File f : files) if (f.getName().endsWith(".csv")) names.add(f.getName());
             if (names.isEmpty()) {
-                new android.app.AlertDialog.Builder(this).setTitle("저장된 CSV 파일").setMessage("저장된 CSV 파일이 없습니다.").setPositiveButton("확인", null).show();
+                new LocalizedDialog(this).setTitle("저장된 CSV 파일").setMessage("저장된 CSV 파일이 없습니다.").setPositiveButton("확인", null).show();
                 return;
             }
             java.util.Collections.sort(names, java.util.Collections.reverseOrder());
-            new android.app.AlertDialog.Builder(this).setTitle("저장된 CSV 파일").setItems(names.toArray(new String[0]), (dialog, which) -> showCsvGraph(new java.io.File(dir, names.get(which)))).setNegativeButton("닫기", null).show();
+            new LocalizedDialog(this).setTitle("저장된 CSV 파일").setItems(names.toArray(new String[0]), (dialog, which) -> showCsvGraph(new java.io.File(dir, names.get(which)))).setNegativeButton("닫기", null).show();
         });
 
         startButton.setOnClickListener(
@@ -478,7 +478,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         graphModes.setOrientation(LinearLayout.HORIZONTAL);
         String[] modeNames = {"ALL","X","Y","Z","TOTAL"};
         for (String m : modeNames) {
-            Button b = new Button(this);
+            Button b = new LocalizedButton(this);
             b.setText(m);
             b.setTextSize(12);
             b.setAllCaps(false);
@@ -495,30 +495,30 @@ public class MainActivity extends Activity implements SensorEventListener {
         root.addView(emailSaveButton);
 
         // ===== Telegram 설정 =====
-        android.widget.TextView telegramTitle = new android.widget.TextView(this);
+        android.widget.TextView telegramTitle = new LocalizedTextView(this);
         telegramTitle.setText("Telegram 자동 알림");
         telegramTitle.setTextSize(18f);
         telegramTitle.setPadding(0, 24, 0, 8);
 
-        android.widget.EditText telegramTokenInput = new android.widget.EditText(this);
-        telegramTokenInput.setHint("Telegram Bot Token");
+        android.widget.EditText telegramTokenInput = new LocalizedEditText(this);
+        UiHints.set(telegramTokenInput, "Telegram Bot Token");
         telegramTokenInput.setSingleLine(true);
         telegramTokenInput.setInputType(
                 android.text.InputType.TYPE_CLASS_TEXT |
                 android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
 
-        android.widget.EditText telegramChatIdInput = new android.widget.EditText(this);
-        telegramChatIdInput.setHint("Telegram Chat ID 여러 개 입력 (쉼표 또는 줄바꿈 구분)");
+        android.widget.EditText telegramChatIdInput = new LocalizedEditText(this);
+        UiHints.set(telegramChatIdInput, "Telegram Chat ID 여러 개 입력 (쉼표 또는 줄바꿈 구분)");
         telegramChatIdInput.setSingleLine(false);
         telegramChatIdInput.setMinLines(2);
 
-        android.widget.Button telegramSaveButton = new android.widget.Button(this);
+        android.widget.Button telegramSaveButton = new LocalizedButton(this);
         telegramSaveButton.setText("Telegram 저장");
 
-        android.widget.Button telegramTestButton = new android.widget.Button(this);
+        android.widget.Button telegramTestButton = new LocalizedButton(this);
         telegramTestButton.setText("Telegram 테스트 전송");
 
-        android.widget.TextView telegramStatus = new android.widget.TextView(this);
+        android.widget.TextView telegramStatus = new LocalizedTextView(this);
         telegramStatus.setText("Telegram : 설정 필요");
         telegramStatus.setPadding(0, 6, 0, 12);
 
@@ -538,7 +538,7 @@ public class MainActivity extends Activity implements SensorEventListener {
             String chatId = telegramChatIdInput.getText().toString().trim();
 
             if (token.isEmpty() || chatId.isEmpty()) {
-                android.widget.Toast.makeText(this,
+                LocalizedToast.makeText(this,
                         "Bot Token과 Chat ID를 입력해주세요.",
                         android.widget.Toast.LENGTH_SHORT).show();
                 return;
@@ -550,7 +550,7 @@ public class MainActivity extends Activity implements SensorEventListener {
                     .apply();
 
             telegramStatus.setText("Telegram : 설정 저장됨");
-            android.widget.Toast.makeText(this,
+            LocalizedToast.makeText(this,
                     "Telegram 설정을 저장했습니다.",
                     android.widget.Toast.LENGTH_SHORT).show();
         });
@@ -560,7 +560,7 @@ public class MainActivity extends Activity implements SensorEventListener {
             String chatId = telegramChatIdInput.getText().toString().trim();
 
             if (token.isEmpty() || chatId.isEmpty()) {
-                android.widget.Toast.makeText(this,
+                LocalizedToast.makeText(this,
                         "먼저 Bot Token과 Chat ID를 입력해주세요.",
                         android.widget.Toast.LENGTH_SHORT).show();
                 return;
@@ -575,12 +575,12 @@ public class MainActivity extends Activity implements SensorEventListener {
                     (success, message) -> runOnUiThread(() -> {
                         if (success) {
                             telegramStatus.setText("Telegram : 테스트 전송 성공");
-                            android.widget.Toast.makeText(this,
+                            LocalizedToast.makeText(this,
                                     "Telegram 테스트 메시지 전송 성공",
                                     android.widget.Toast.LENGTH_LONG).show();
                         } else {
                             telegramStatus.setText("Telegram : 전송 실패 (" + message + ")");
-                            android.widget.Toast.makeText(this,
+                            LocalizedToast.makeText(this,
                                     "Telegram 전송 실패: " + message,
                                     android.widget.Toast.LENGTH_LONG).show();
                         }
@@ -627,12 +627,12 @@ public class MainActivity extends Activity implements SensorEventListener {
         infoRow.setOrientation(LinearLayout.HORIZONTAL);
         infoRow.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView sub=new TextView(this);
+        TextView sub=new LocalizedTextView(this);
         sub.setText("REAL-TIME 3-AXIS CONDITION MONITORING"); sub.setTextSize(11); sub.setTextColor(muted);
         sub.setLetterSpacing(0.08f); sub.setPadding((int)(4*den),(int)(10*den),0,(int)(8*den));
         infoRow.addView(sub,new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f));
 
-        TextView versionText=new TextView(this);
+        TextView versionText=new LocalizedTextView(this);
         String shortVersion="3.4.1";
         try{
             android.content.pm.PackageInfo pi=getPackageManager().getPackageInfo(getPackageName(),0);
@@ -668,7 +668,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         graphCard.setPadding((int)(10*den),(int)(10*den),(int)(10*den),(int)(8*den));
         android.graphics.drawable.GradientDrawable graphBg=new android.graphics.drawable.GradientDrawable();
         graphBg.setColor(Color.WHITE);graphBg.setCornerRadius(20*den);graphBg.setStroke((int)(1*den),Color.rgb(218,226,233));graphCard.setBackground(graphBg);
-        TextView graphTitle=new TextView(this);graphTitle.setText("LIVE VIBRATION");graphTitle.setTextSize(13);graphTitle.setTextColor(ink);
+        TextView graphTitle=new LocalizedTextView(this);graphTitle.setText("LIVE VIBRATION");graphTitle.setTextSize(13);graphTitle.setTextColor(ink);
         graphTitle.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);graphTitle.setPadding((int)(5*den),(int)(2*den),0,(int)(6*den));graphCard.addView(graphTitle);
         graphCard.addView(graph,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(210*den)));
         graphModes.setPadding(0,(int)(6*den),0,0);
@@ -681,7 +681,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         totalCard.setPadding((int)(18*den),(int)(12*den),(int)(18*den),(int)(12*den));
         android.graphics.drawable.GradientDrawable totalBg=new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,new int[]{Color.rgb(27,52,72),Color.rgb(37,83,105)});
         totalBg.setCornerRadius(20*den);totalCard.setBackground(totalBg);
-        TextView totalLabel=new TextView(this);totalLabel.setText("TOTAL VIBRATION");totalLabel.setTextSize(12);totalLabel.setTextColor(Color.rgb(190,211,223));totalLabel.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);totalCard.addView(totalLabel);
+        TextView totalLabel=new LocalizedTextView(this);totalLabel.setText("TOTAL VIBRATION");totalLabel.setTextSize(12);totalLabel.setTextColor(Color.rgb(190,211,223));totalLabel.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);totalCard.addView(totalLabel);
         currentText.setTextSize(27);currentText.setTextColor(Color.WHITE);currentText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);currentText.setPadding(0,(int)(2*den),0,(int)(2*den));totalCard.addView(currentText);
         LinearLayout totalStats=new LinearLayout(this);totalStats.setOrientation(LinearLayout.HORIZONTAL);
         TextView[] ts={avgText,maxText,minText};for(TextView tv:ts){tv.setTextSize(12);tv.setTextColor(Color.rgb(220,232,239));tv.setGravity(Gravity.CENTER);tv.setPadding((int)(2*den),(int)(5*den),(int)(2*den),(int)(5*den));totalStats.addView(tv,new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f));}
@@ -713,7 +713,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         LinearLayout.LayoutParams processLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(52*den));processLp.setMargins((int)(3*den),(int)(6*den),(int)(3*den),(int)(4*den));root.addView(processShockButton,processLp);
         LinearLayout.LayoutParams historyLp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,(int)(50*den));historyLp.setMargins((int)(3*den),(int)(3*den),(int)(3*den),(int)(8*den));root.addView(historyButton,historyLp);
 
-        Button settingsToggle=new Button(this);settingsToggle.setText("⚙  알림 / Telegram 설정");settingsToggle.setTextColor(ink);settingsToggle.setTextSize(13);settingsToggle.setAllCaps(false);settingsToggle.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(225,232,237)));
+        Button settingsToggle=new LocalizedButton(this);settingsToggle.setText("⚙  알림 / Telegram 설정");settingsToggle.setTextColor(ink);settingsToggle.setTextSize(13);settingsToggle.setAllCaps(false);settingsToggle.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(225,232,237)));
         LinearLayout settingsPanel=new LinearLayout(this);settingsPanel.setOrientation(LinearLayout.VERTICAL);settingsPanel.setPadding((int)(12*den),(int)(8*den),(int)(12*den),(int)(12*den));settingsPanel.setVisibility(View.GONE);
         settingsPanel.addView(emailLabel);settingsPanel.addView(emailInput);settingsPanel.addView(emailSaveButton);settingsPanel.addView(telegramTitle);settingsPanel.addView(telegramTokenInput);settingsPanel.addView(telegramChatIdInput);settingsPanel.addView(telegramSaveButton);settingsPanel.addView(telegramTestButton);settingsPanel.addView(telegramStatus);
         Button[] sbs={emailSaveButton,telegramSaveButton,telegramTestButton};for(Button sb:sbs){sb.setTextColor(Color.WHITE);sb.setTextSize(13);sb.setAllCaps(false);sb.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(75,94,110)));}
@@ -1381,7 +1381,7 @@ public class MainActivity extends Activity implements SensorEventListener {
                 openEventCamera();
             } else {
                 cameraText.setText("카메라 : 권한 거부됨");
-                android.widget.Toast.makeText(
+                LocalizedToast.makeText(
                         this,
                         "사진 자동 촬영을 사용하려면 카메라 권한이 필요합니다.",
                         android.widget.Toast.LENGTH_LONG
@@ -1454,7 +1454,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     private TextView createValueText(String text) {
 
-        TextView view = new TextView(this);
+        TextView view = new LocalizedTextView(this);
 
         view.setText(text);
         view.setTextSize(19);
@@ -1474,6 +1474,7 @@ public class MainActivity extends Activity implements SensorEventListener {
             return;
         }
 
+        if (!measuring) sensorHealth.reset();
         measuring = true;
 
         sensorManager.registerListener(
@@ -1541,6 +1542,8 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent event) {
+        if (measuring) unifiedSensorSample(event.timestamp);
+
 
         if (!measuring) {
             return;
@@ -1916,7 +1919,7 @@ public class MainActivity extends Activity implements SensorEventListener {
                                                         "📍 같은 이벤트의 LGES " + eventBuilding + " GPS 위치",
                                                         (mapOk, mapMsg) ->
                                                                 runOnUiThread(() ->
-                                                                        android.widget.Toast.makeText(
+                                                                        LocalizedToast.makeText(
                                                                                 this,
                                                                                 mapOk
                                                                                         ? "Telegram 위치 맵 전송 성공"
@@ -1927,13 +1930,13 @@ public class MainActivity extends Activity implements SensorEventListener {
                                                 );
                                             }
 
-                                            android.widget.Toast.makeText(
+                                            LocalizedToast.makeText(
                                                     this,
                                                     "Telegram 이벤트 묶음 전송 성공",
                                                     android.widget.Toast.LENGTH_SHORT
                                             ).show();
                                         } else {
-                                            android.widget.Toast.makeText(
+                                            LocalizedToast.makeText(
                                                     this,
                                                     "Telegram 이벤트 묶음 전송 실패: " + message,
                                                     android.widget.Toast.LENGTH_LONG
@@ -1980,11 +1983,11 @@ public class MainActivity extends Activity implements SensorEventListener {
             android.graphics.Paint[] ps=new android.graphics.Paint[4];int[] cs={android.graphics.Color.rgb(0,130,220),android.graphics.Color.rgb(0,170,110),android.graphics.Color.rgb(230,145,20),android.graphics.Color.rgb(95,55,180)};
             for(int k=0;k<4;k++){ps[k]=new android.graphics.Paint(1);ps[k].setColor(cs[k]);ps[k].setStyle(android.graphics.Paint.Style.STROKE);ps[k].setStrokeWidth(k==3?6f:4f);}
             double spec=getThreshold(),maxY=Math.max(3.0,spec*1.5);for(DataPoint d:data)maxY=Math.max(maxY,Math.max(d.value,Math.max(Math.abs(d.x),Math.max(Math.abs(d.y),Math.abs(d.z))))*1.15);
-            for(int i=0;i<=4;i++){float y=top+(bottom-top)*i/4f;canvas.drawLine(left,y,right,y,grid);canvas.drawText(String.format(Locale.US,"%.1f",maxY*(4-i)/4.0),10,y+10,text);}
-            float sy=bottom-(float)(spec/maxY*(bottom-top));canvas.drawLine(left,sy,right,sy,specP);canvas.drawText(String.format(Locale.US,"SPEC %.2f",spec),left+10,Math.max(top+30,sy-10),specP);
+            for(int i=0;i<=4;i++){float y=top+(bottom-top)*i/4f;canvas.drawLine(left,y,right,y,grid);canvas.drawText(AppLanguage.text(String.format(Locale.US,"%.1f",maxY*(4-i)/4.0)),10,y+10,text);}
+            float sy=bottom-(float)(spec/maxY*(bottom-top));canvas.drawLine(left,sy,right,sy,specP);canvas.drawText(AppLanguage.text(String.format(Locale.US,"SPEC %.2f",spec)),left+10,Math.max(top+30,sy-10),specP);
             android.graphics.Path[] paths={new android.graphics.Path(),new android.graphics.Path(),new android.graphics.Path(),new android.graphics.Path()};int n=data.size();
             for(int i=0;i<n;i++){DataPoint d=data.get(i);double[] vv={Math.abs(d.x),Math.abs(d.y),Math.abs(d.z),d.value};float x=left+(right-left)*(n<=1?0f:i/(float)(n-1));for(int k=0;k<4;k++){float y=bottom-(float)(vv[k]/maxY*(bottom-top));if(i==0)paths[k].moveTo(x,y);else paths[k].lineTo(x,y);}}
-            for(int k=0;k<4;k++)canvas.drawPath(paths[k],ps[k]);canvas.drawText("X / Y / Z / TOTAL",left,40,text);canvas.drawText("-3s",left,665,text);canvas.drawText("0s",590,665,text);canvas.drawText("+3s",1080,665,text);
+            for(int k=0;k<4;k++)canvas.drawPath(paths[k],ps[k]);canvas.drawText(AppLanguage.text("X / Y / Z / TOTAL"),left,40,text);canvas.drawText(AppLanguage.text("-3s"),left,665,text);canvas.drawText(AppLanguage.text("0s"),590,665,text);canvas.drawText(AppLanguage.text("+3s"),1080,665,text);
             java.io.File f=new java.io.File(csvFile.getParentFile(),csvFile.getName().replace(".csv","_graph.png"));try(java.io.FileOutputStream out=new java.io.FileOutputStream(f)){bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);}bitmap.recycle();return f;
         }catch(Exception e){return null;}
     }
@@ -2138,7 +2141,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         } catch (Exception e) {
 
-            android.widget.Toast.makeText(
+            LocalizedToast.makeText(
                     this,
                     "사용 가능한 이메일 앱을 찾지 못했습니다.",
                     android.widget.Toast.LENGTH_LONG
@@ -2264,7 +2267,7 @@ public class MainActivity extends Activity implements SensorEventListener {
             }
             br.close();
         } catch (Exception e) {
-            new android.app.AlertDialog.Builder(this)
+            new LocalizedDialog(this)
                     .setTitle("CSV 읽기 오류")
                     .setMessage(e.getMessage())
                     .setPositiveButton("확인", null)
@@ -2273,7 +2276,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         }
 
         if (data.isEmpty()) {
-            new android.app.AlertDialog.Builder(this)
+            new LocalizedDialog(this)
                     .setTitle(file.getName())
                     .setMessage("표시할 데이터가 없습니다.")
                     .setPositiveButton("확인", null)
@@ -2301,7 +2304,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         box.setPadding(pad, pad, pad, pad);
 
         android.widget.TextView info =
-                new android.widget.TextView(this);
+                new LocalizedTextView(this);
 
         info.setText(
                 "파일 : " + file.getName() +
@@ -2338,7 +2341,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         box.addView(csvGraph);
 
-        new android.app.AlertDialog.Builder(this)
+        new LocalizedDialog(this)
                 .setTitle("저장 진동 데이터")
                 .setView(box)
                 .setPositiveButton("닫기", null)
@@ -2374,13 +2377,15 @@ public class MainActivity extends Activity implements SensorEventListener {
         @Override protected void onDraw(Canvas canvas){super.onDraw(canvas);int w=getWidth(),h=getHeight(),l=58,r=w-20,t=48,b=h-50;
             double maxY=Math.max(3.0,threshold*1.5);maxY=Math.max(maxY,Math.max(absMax(totals),Math.max(absMax(xs),Math.max(absMax(ys),absMax(zs))))*1.15);
             for(int i=0;i<=4;i++){float y=t+(b-t)*i/4f;canvas.drawLine(l,y,r,y,gridPaint);}
-            float sy=(float)(b-(threshold/maxY)*(b-t));canvas.drawLine(l,sy,r,sy,thresholdPaint);canvas.drawText(String.format(Locale.US,"SPEC %.2f",threshold),l+8,sy-7,textPaint);
+            float sy=(float)(b-(threshold/maxY)*(b-t));canvas.drawLine(l,sy,r,sy,thresholdPaint);canvas.drawText(AppLanguage.text(String.format(Locale.US,"SPEC %.2f",threshold)),l+8,sy-7,textPaint);
             if(mode.equals("ALL")||mode.equals("X"))drawSeries(canvas,xs,px,l,r,t,b,maxY);
             if(mode.equals("ALL")||mode.equals("Y"))drawSeries(canvas,ys,py,l,r,t,b,maxY);
             if(mode.equals("ALL")||mode.equals("Z"))drawSeries(canvas,zs,pz,l,r,t,b,maxY);
             if(mode.equals("ALL")||mode.equals("TOTAL"))drawSeries(canvas,totals,pt,l,r,t,b,maxY);
-            canvas.drawText(String.format(Locale.US,"%.1f",maxY),3,t+22,textPaint);canvas.drawText("0",18,b,textPaint);
-            canvas.drawText("X  Y  Z  TOTAL",l,b+38,textPaint);
+            canvas.drawText(AppLanguage.text(String.format(Locale.US,"%.1f",maxY)),3,t+22,textPaint);canvas.drawText(AppLanguage.text("0"),18,b,textPaint);
+            canvas.drawText(AppLanguage.text("X  Y  Z  TOTAL"),l,b+38,textPaint);
         }
     }
+
+    @Override protected boolean measurementActive() { return measuring; }
 }

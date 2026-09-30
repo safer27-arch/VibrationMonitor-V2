@@ -9,7 +9,7 @@ import java.io.*;
 import java.text.*;
 import java.util.*;
 
-public class HistoryActivity extends Activity {
+public class HistoryActivity extends UnifiedActivity {
 
     private double spec = 2.0;
     private File dataDir;
@@ -43,14 +43,14 @@ public class HistoryActivity extends Activity {
         int p = dp(16);
         root.setPadding(p, p, p, dp(100));
 
-        TextView title = new TextView(this);
+        TextView title = new LocalizedTextView(this);
         title.setText("진동 이력 관리");
         title.setTextSize(28);
         title.setGravity(Gravity.CENTER);
         title.setPadding(0, 0, 0, dp(12));
         root.addView(title);
 
-        TextView specText = new TextView(this);
+        TextView specText = new LocalizedTextView(this);
         specText.setText(String.format(Locale.US,
                 "현재 SPEC : %.2f m/s²", spec));
         specText.setTextSize(18);
@@ -58,19 +58,19 @@ public class HistoryActivity extends Activity {
 
         loadEvents();
 
-        TextView count = new TextView(this);
+        TextView count = new LocalizedTextView(this);
         count.setText("저장 이벤트 : " + events.size() + "건");
         count.setTextSize(18);
         count.setPadding(0, dp(6), 0, dp(10));
         root.addView(count);
 
         if (events.isEmpty()) {
-            TextView empty = new TextView(this);
+            TextView empty = new LocalizedTextView(this);
             empty.setText("\n저장된 CSV 이벤트가 없습니다.");
             empty.setTextSize(18);
             root.addView(empty);
         } else {
-            TextView trendTitle = new TextView(this);
+            TextView trendTitle = new LocalizedTextView(this);
             trendTitle.setText("이벤트 최대 진동 Trend");
             trendTitle.setTextSize(20);
             trendTitle.setPadding(0, dp(10), 0, dp(4));
@@ -81,7 +81,7 @@ public class HistoryActivity extends Activity {
                     ViewGroup.LayoutParams.MATCH_PARENT, dp(260)));
             root.addView(trend);
 
-            TextView listTitle = new TextView(this);
+            TextView listTitle = new LocalizedTextView(this);
             listTitle.setText("\n최근 이벤트");
             listTitle.setTextSize(20);
             root.addView(listTitle);
@@ -89,7 +89,7 @@ public class HistoryActivity extends Activity {
             int eventNo = events.size();
 
             for (EventStat e : events) {
-                Button b = new Button(this);
+                Button b = new LocalizedButton(this);
 
                 b.setText(
                     "이벤트 #" + eventNo +
@@ -112,7 +112,7 @@ public class HistoryActivity extends Activity {
             }
         }
 
-        Button statsButton = new Button(this);
+        Button statsButton = new LocalizedButton(this);
         statsButton.setText("통계 대시보드");
         statsButton.setOnClickListener(v -> {
             android.content.Intent intent =
@@ -124,7 +124,7 @@ public class HistoryActivity extends Activity {
         });
         root.addView(statsButton);
 
-        Button close = new Button(this);
+        Button close = new LocalizedButton(this);
         close.setText("돌아가기");
         close.setOnClickListener(v -> finish());
         root.addView(close);
@@ -302,7 +302,7 @@ public class HistoryActivity extends Activity {
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(dp(12), dp(12), dp(12), dp(12));
 
-        TextView info = new TextView(this);
+        TextView info = new LocalizedTextView(this);
         info.setText(
                 e.dateText +
                 "\n파일 : " + e.file.getName() +
@@ -333,7 +333,7 @@ public class HistoryActivity extends Activity {
                 e.hasLocation &&
                 "WA5".equalsIgnoreCase(e.building)
         ) {
-            TextView mapTitle = new TextView(this);
+            TextView mapTitle = new LocalizedTextView(this);
             mapTitle.setText("\nLGES WA5 이벤트 위치");
             mapTitle.setTextSize(17);
             box.addView(mapTitle);
@@ -357,7 +357,7 @@ public class HistoryActivity extends Activity {
 
         if (e.photoFile != null && e.photoFile.exists()) {
 
-            TextView photoTitle = new TextView(this);
+            TextView photoTitle = new LocalizedTextView(this);
             photoTitle.setText("\n이벤트 자동 촬영 사진");
             photoTitle.setTextSize(17);
             box.addView(photoTitle);
@@ -420,7 +420,7 @@ public class HistoryActivity extends Activity {
                 )
         );
 
-        new AlertDialog.Builder(this)
+        new LocalizedDialog(this)
                 .setTitle("이벤트 상세 그래프")
                 .setView(detailScroll)
                 .setPositiveButton("닫기", null)
@@ -520,8 +520,8 @@ public class HistoryActivity extends Activity {
                     borderPaint
             );
 
-            canvas.drawText(
-                    "WA5",
+            canvas.drawText(AppLanguage.text(
+                    "WA5"),
                     left + 12f,
                     top + 36f,
                     textPaint
@@ -630,8 +630,8 @@ public class HistoryActivity extends Activity {
             labelPaint.setColor(Color.RED);
             labelPaint.setTextSize(28f);
 
-            canvas.drawText(
-                    "이벤트 위치",
+            canvas.drawText(AppLanguage.text(
+                    "이벤트 위치"),
                     Math.min(px + 20f, right - 150f),
                     Math.max(py - 15f, top + 70f),
                     labelPaint
@@ -644,8 +644,8 @@ public class HistoryActivity extends Activity {
                 warnPaint.setColor(Color.rgb(200, 100, 0));
                 warnPaint.setTextSize(25f);
 
-                canvas.drawText(
-                        "GPS 오차 또는 건물 범위 밖",
+                canvas.drawText(AppLanguage.text(
+                        "GPS 오차 또는 건물 범위 밖"),
                         left,
                         h - 15f,
                         warnPaint
@@ -704,13 +704,13 @@ public class HistoryActivity extends Activity {
                 c.drawLine(left, y, right, y, grid);
 
                 double label = max * (4 - i) / 4.0;
-                c.drawText(String.format(Locale.US, "%.1f", label),
+                c.drawText(AppLanguage.text(String.format(Locale.US, "%.1f", label)),
                         5, y + 8, text);
             }
 
             float sy = (float)(bottom - spec / max * (bottom - top));
             c.drawLine(left, sy, right, sy, specPaint);
-            c.drawText(String.format(Locale.US, "SPEC %.2f", spec),
+            c.drawText(AppLanguage.text(String.format(Locale.US, "SPEC %.2f", spec)),
                     left + 8, Math.max(top + 24, sy - 8), text);
 
             Path path = new Path();
@@ -728,9 +728,9 @@ public class HistoryActivity extends Activity {
 
             c.drawPath(path, line);
 
-            c.drawText("-3s", left, getHeight() - 12, text);
-            c.drawText("0s", (left + right) / 2f - 14, getHeight() - 12, text);
-            c.drawText("+3s", right - 48, getHeight() - 12, text);
+            c.drawText(AppLanguage.text("-3s"), left, getHeight() - 12, text);
+            c.drawText(AppLanguage.text("0s"), (left + right) / 2f - 14, getHeight() - 12, text);
+            c.drawText(AppLanguage.text("+3s"), right - 48, getHeight() - 12, text);
         }
     }
 
@@ -788,13 +788,13 @@ public class HistoryActivity extends Activity {
                 c.drawLine(left, y, right, y, grid);
 
                 double label = scaleMax * (4 - i) / 4.0;
-                c.drawText(String.format(Locale.US, "%.1f", label),
+                c.drawText(AppLanguage.text(String.format(Locale.US, "%.1f", label)),
                         5, y + 8, text);
             }
 
             float sy = (float)(bottom - spec / scaleMax * (bottom - top));
             c.drawLine(left, sy, right, sy, specPaint);
-            c.drawText(String.format(Locale.US, "SPEC %.2f", spec),
+            c.drawText(AppLanguage.text(String.format(Locale.US, "SPEC %.2f", spec)),
                     left + 8, Math.max(top + 24, sy - 6), text);
 
             Path path = new Path();
@@ -813,7 +813,7 @@ public class HistoryActivity extends Activity {
 
                 c.drawCircle(x, y, 7f, point);
 
-                c.drawText(String.format(Locale.US, "%.2f", e.max),
+                c.drawText(AppLanguage.text(String.format(Locale.US, "%.2f", e.max)),
                         x - 24, y - 12, text);
 
                 String t = e.dateText.length() >= 16
@@ -822,7 +822,7 @@ public class HistoryActivity extends Activity {
 
                 c.save();
                 c.rotate(-35, x, bottom + 48);
-                c.drawText(t, x - 18, bottom + 48, text);
+                c.drawText(AppLanguage.text(t), x - 18, bottom + 48, text);
                 c.restore();
             }
 

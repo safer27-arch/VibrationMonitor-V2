@@ -1,0 +1,2312 @@
+{
+  "가속도 센서 준비 완료": [
+    "가속도 센서 준비 완료",
+    "Accelerometer ready",
+    "Czujnik przyspieszenia gotowy"
+  ],
+  "가속도 센서를 찾을 수 없습니다.": [
+    "가속도 센서를 찾을 수 없습니다.",
+    "Accelerometer not found.",
+    "Nie znaleziono czujnika przyspieszenia."
+  ],
+  "GPS : 위치 확인 대기 중": [
+    "GPS : 위치 확인 대기 중",
+    "GPS : waiting for location",
+    "GPS : oczekiwanie na lokalizację"
+  ],
+  "카메라 : 준비 중...": [
+    "카메라 : 준비 중...",
+    "Camera : preparing...",
+    "Kamera : przygotowanie..."
+  ],
+  "사용 건물": [
+    "사용 건물",
+    "Building / area",
+    "Budynek / obszar"
+  ],
+  "현재값 : 0.000 m/s²": [
+    "현재값 : 0.000 m/s²",
+    "Current : 0.000 m/s²",
+    "Aktualna : 0.000 m/s²"
+  ],
+  "평균값 : 0.000 m/s²": [
+    "평균값 : 0.000 m/s²",
+    "Average : 0.000 m/s²",
+    "Średnia : 0.000 m/s²"
+  ],
+  "최대값 : 0.000 m/s²": [
+    "최대값 : 0.000 m/s²",
+    "Maximum : 0.000 m/s²",
+    "Maks. : 0.000 m/s²"
+  ],
+  "최소값 : 0.000 m/s²": [
+    "최소값 : 0.000 m/s²",
+    "Minimum : 0.000 m/s²",
+    "Min. : 0.000 m/s²"
+  ],
+  "주 진동 방향 : -": [
+    "주 진동 방향 : -",
+    "Main vibration axis : -",
+    "Główny kierunek drgań : -"
+  ],
+  "상태 : 정상": [
+    "상태 : 정상",
+    "Status : normal",
+    "Stan : normalny"
+  ],
+  "이벤트 : 0회\n최근 3초 데이터 대기 중": [
+    "이벤트 : 0회\n최근 3초 데이터 대기 중",
+    "Events : 0\nWaiting for 3 seconds of data",
+    "Zdarzenia : 0\nOczekiwanie na ostatnie 3 s danych"
+  ],
+  "SPEC 저장 / 적용": [
+    "SPEC 저장 / 적용",
+    "SAVE / APPLY SPEC",
+    "ZAPISZ / ZASTOSUJ SPEC"
+  ],
+  "SPEC %.2f m/s² 저장 완료": [
+    "SPEC %.2f m/s² 저장 완료",
+    "SPEC %.2f m/s² saved",
+    "SPEC %.2f m/s² zapisano"
+  ],
+  "0보다 큰 숫자를 입력하세요.": [
+    "0보다 큰 숫자를 입력하세요.",
+    "Enter a number greater than 0.",
+    "Wprowadź liczbę większą od 0."
+  ],
+  "알람 수신 이메일": [
+    "알람 수신 이메일",
+    "Alarm recipient email",
+    "E-mail do alarmów"
+  ],
+  "이메일 저장": [
+    "이메일 저장",
+    "Save email",
+    "Zapisz e-mail"
+  ],
+  "이메일 주소가 비어 있습니다.": [
+    "이메일 주소가 비어 있습니다.",
+    "The email address is empty.",
+    "Adres e-mail jest pusty."
+  ],
+  "알람 이메일 저장 완료": [
+    "알람 이메일 저장 완료",
+    "Alarm email saved",
+    "Adres alarmowy zapisano"
+  ],
+  "측정 시작": [
+    "측정 시작",
+    "START MEASUREMENT",
+    "START POMIARU"
+  ],
+  "측정 중지": [
+    "측정 중지",
+    "STOP MEASUREMENT",
+    "STOP POMIARU"
+  ],
+  "값 초기화": [
+    "값 초기화",
+    "RESET VALUES",
+    "RESET WARTOŚCI"
+  ],
+  "저장된 CSV 파일": [
+    "저장된 CSV 파일",
+    "Saved CSV files",
+    "Zapisane pliki CSV"
+  ],
+  "공정 충격 분석 / PROCESS SHOCK": [
+    "공정 충격 분석 / PROCESS SHOCK",
+    "Process shock analysis / PROCESS SHOCK",
+    "Analiza uderzeń procesu / PROCESS SHOCK"
+  ],
+  "진동 이력 관리": [
+    "진동 이력 관리",
+    "Vibration history",
+    "Historia drgań"
+  ],
+  "저장된 CSV 파일이 없습니다.": [
+    "저장된 CSV 파일이 없습니다.",
+    "No saved CSV files.",
+    "Brak zapisanych plików CSV."
+  ],
+  "확인": [
+    "확인",
+    "OK",
+    "OK"
+  ],
+  "닫기": [
+    "닫기",
+    "Close",
+    "Zamknij"
+  ],
+  "Telegram 자동 알림": [
+    "Telegram 자동 알림",
+    "Automatic Telegram alerts",
+    "Automatyczne alarmy Telegram"
+  ],
+  "Telegram Bot Token": [
+    "Telegram Bot Token",
+    "Telegram Bot Token",
+    "Token bota Telegram"
+  ],
+  "Telegram Chat ID 여러 개 입력 (쉼표 또는 줄바꿈 구분)": [
+    "Telegram Chat ID 여러 개 입력 (쉼표 또는 줄바꿈 구분)",
+    "Multiple Telegram Chat IDs (separate with commas or new lines)",
+    "Wprowadź kilka Chat ID (oddziel przecinkiem lub nową linią)"
+  ],
+  "Telegram 저장": [
+    "Telegram 저장",
+    "Save Telegram settings",
+    "Zapisz Telegram"
+  ],
+  "Telegram 테스트 전송": [
+    "Telegram 테스트 전송",
+    "Send Telegram test",
+    "Wyślij test Telegram"
+  ],
+  "Telegram : 설정 필요": [
+    "Telegram : 설정 필요",
+    "Telegram : setup required",
+    "Telegram : wymagana konfiguracja"
+  ],
+  "Telegram : 설정 저장됨": [
+    "Telegram : 설정 저장됨",
+    "Telegram : settings saved",
+    "Telegram : konfiguracja zapisana"
+  ],
+  "Bot Token과 Chat ID를 입력해주세요.": [
+    "Bot Token과 Chat ID를 입력해주세요.",
+    "Enter a Bot Token and Chat ID.",
+    "Wprowadź Bot Token i Chat ID."
+  ],
+  "Telegram 설정을 저장했습니다.": [
+    "Telegram 설정을 저장했습니다.",
+    "Telegram settings saved.",
+    "Konfiguracja Telegram została zapisana."
+  ],
+  "먼저 Bot Token과 Chat ID를 입력해주세요.": [
+    "먼저 Bot Token과 Chat ID를 입력해주세요.",
+    "Enter a Bot Token and Chat ID first.",
+    "Najpierw wprowadź Bot Token i Chat ID."
+  ],
+  "Telegram : 테스트 전송 중...": [
+    "Telegram : 테스트 전송 중...",
+    "Telegram : sending test...",
+    "Telegram : wysyłanie testu..."
+  ],
+  "Telegram : 테스트 전송 성공": [
+    "Telegram : 테스트 전송 성공",
+    "Telegram : test sent",
+    "Telegram : test wysłany pomyślnie"
+  ],
+  "Telegram 테스트 메시지 전송 성공": [
+    "Telegram 테스트 메시지 전송 성공",
+    "Telegram test message sent",
+    "Wiadomość testowa Telegram wysłana"
+  ],
+  "Telegram : 전송 실패 (": [
+    "Telegram : 전송 실패 (",
+    "Telegram : send failed (",
+    "Telegram : błąd wysyłania ("
+  ],
+  "Telegram 전송 실패: ": [
+    "Telegram 전송 실패: ",
+    "Telegram send failed: ",
+    "Błąd wysyłania Telegram: "
+  ],
+  "REAL-TIME 3-AXIS CONDITION MONITORING": [
+    "실시간 3축 진동 모니터링",
+    "REAL-TIME 3-AXIS MONITORING",
+    "POMIAR DRGAŃ W 3 OSIACH"
+  ],
+  "AREA": [
+    "구역",
+    "AREA",
+    "OBSZAR"
+  ],
+  "LIVE VIBRATION": [
+    "실시간 진동",
+    "LIVE VIBRATION",
+    "DRGANIA NA ŻYWO"
+  ],
+  "TOTAL VIBRATION": [
+    "합성 진동",
+    "TOTAL VIBRATION",
+    "DRGANIA WYPADKOWE"
+  ],
+  "SPEC APPLY": [
+    "SPEC 적용",
+    "APPLY SPEC",
+    "ZASTOSUJ SPEC"
+  ],
+  "▶  측정 시작": [
+    "▶  측정 시작",
+    "▶  START MEASUREMENT",
+    "▶  START POMIARU"
+  ],
+  "■  측정 중지": [
+    "■  측정 중지",
+    "■  STOP MEASUREMENT",
+    "■  STOP POMIARU"
+  ],
+  "↻  값 초기화": [
+    "↻  값 초기화",
+    "↻  RESET VALUES",
+    "↻  RESET WARTOŚCI"
+  ],
+  "CSV 데이터": [
+    "CSV 데이터",
+    "CSV DATA",
+    "DANE CSV"
+  ],
+  "⚡  공정 충격 분석 / PROCESS SHOCK": [
+    "⚡  공정 충격 분석 / PROCESS SHOCK",
+    "⚡  PROCESS SHOCK ANALYSIS",
+    "⚡  ANALIZA UDERZEŃ / PROCESS SHOCK"
+  ],
+  "⚙  알림 / Telegram 설정": [
+    "⚙  알림 / Telegram 설정",
+    "⚙  ALERT / TELEGRAM SETTINGS",
+    "⚙  USTAWIENIA ALARMÓW / TELEGRAM"
+  ],
+  "▲  알림 / Telegram 설정 닫기": [
+    "▲  알림 / Telegram 설정 닫기",
+    "▲  CLOSE TELEGRAM SETTINGS",
+    "▲  ZAMKNIJ USTAWIENIA TELEGRAM"
+  ],
+  "카메라 : 권한 필요": [
+    "카메라 : 권한 필요",
+    "Camera : permission required",
+    "Kamera : wymagane uprawnienie"
+  ],
+  "카메라 : 촬영 완료": [
+    "카메라 : 촬영 완료",
+    "Camera : photo saved",
+    "Kamera : zdjęcie zapisane"
+  ],
+  "카메라 : 파일 저장 실패": [
+    "카메라 : 파일 저장 실패",
+    "Camera : file save failed",
+    "Kamera : błąd zapisu pliku"
+  ],
+  "카메라 : 파일 저장 오류": [
+    "카메라 : 파일 저장 오류",
+    "Camera : file save error",
+    "Kamera : błąd zapisu"
+  ],
+  "카메라 : 준비 완료": [
+    "카메라 : 준비 완료",
+    "Camera : ready",
+    "Kamera : gotowa"
+  ],
+  "카메라 : 준비 실패": [
+    "카메라 : 준비 실패",
+    "Camera : initialization failed",
+    "Kamera : błąd inicjalizacji"
+  ],
+  "카메라 : 촬영 준비 대기...": [
+    "카메라 : 촬영 준비 대기...",
+    "Camera : waiting for readiness...",
+    "Kamera : oczekiwanie na gotowość..."
+  ],
+  "카메라 : 촬영 실패(준비 안됨)": [
+    "카메라 : 촬영 실패(준비 안됨)",
+    "Camera : capture failed (not ready)",
+    "Kamera : zdjęcie nieudane (brak gotowości)"
+  ],
+  "카메라 : 촬영 중...": [
+    "카메라 : 촬영 중...",
+    "Camera : capturing...",
+    "Kamera : wykonywanie zdjęcia..."
+  ],
+  "카메라 : 사진 처리 중...": [
+    "카메라 : 사진 처리 중...",
+    "Camera : processing photo...",
+    "Kamera : przetwarzanie zdjęcia..."
+  ],
+  "카메라 : 촬영 실패": [
+    "카메라 : 촬영 실패",
+    "Camera : capture failed",
+    "Kamera : zdjęcie nieudane"
+  ],
+  "카메라 : 촬영 오류": [
+    "카메라 : 촬영 오류",
+    "Camera : capture error",
+    "Kamera : błąd zdjęcia"
+  ],
+  "GPS : 위치 권한 허용 필요": [
+    "GPS : 위치 권한 허용 필요",
+    "GPS : location permission required",
+    "GPS : wymagane uprawnienie lokalizacji"
+  ],
+  "GPS : 위치 신호 검색 중...": [
+    "GPS : 위치 신호 검색 중...",
+    "GPS : searching for signal...",
+    "GPS : wyszukiwanie sygnału..."
+  ],
+  "GPS : 위치 확인 오류": [
+    "GPS : 위치 확인 오류",
+    "GPS : location error",
+    "GPS : błąd lokalizacji"
+  ],
+  "GPS : 위치 권한 거부됨": [
+    "GPS : 위치 권한 거부됨",
+    "GPS : location permission denied",
+    "GPS : odmowa uprawnienia lokalizacji"
+  ],
+  "카메라 : 권한 허용됨": [
+    "카메라 : 권한 허용됨",
+    "Camera : permission granted",
+    "Kamera : uprawnienie przyznane"
+  ],
+  "카메라 : 권한 거부됨": [
+    "카메라 : 권한 거부됨",
+    "Camera : permission denied",
+    "Kamera : odmowa uprawnienia"
+  ],
+  "사진 자동 촬영을 사용하려면 카메라 권한이 필요합니다.": [
+    "사진 자동 촬영을 사용하려면 카메라 권한이 필요합니다.",
+    "Automatic photos require camera permission.",
+    "Automatyczne zdjęcia wymagają uprawnienia do kamery."
+  ],
+  "미지정": [
+    "미지정",
+    "Unspecified",
+    "Nieokreślone"
+  ],
+  "센서 없음": [
+    "센서 없음",
+    "No sensor",
+    "Brak czujnika"
+  ],
+  "상태 : 측정 중": [
+    "상태 : 측정 중",
+    "Status : measuring",
+    "Stan : pomiar"
+  ],
+  "상태 : 정지": [
+    "상태 : 정지",
+    "Status : stopped",
+    "Stan : zatrzymany"
+  ],
+  "주 진동 방향 : ": [
+    "주 진동 방향 : ",
+    "Main vibration axis : ",
+    "Główny kierunek drgań : "
+  ],
+  "축": [
+    "축",
+    "axis",
+    "oś"
+  ],
+  "현재값 : %.3f m/s²": [
+    "현재값 : %.3f m/s²",
+    "Current : %.3f m/s²",
+    "Aktualna : %.3f m/s²"
+  ],
+  "평균값 : %.3f m/s²": [
+    "평균값 : %.3f m/s²",
+    "Average : %.3f m/s²",
+    "Średnia : %.3f m/s²"
+  ],
+  "최대값 : %.3f m/s²": [
+    "최대값 : %.3f m/s²",
+    "Maximum : %.3f m/s²",
+    "Maks. : %.3f m/s²"
+  ],
+  "최소값 : %.3f m/s²": [
+    "최소값 : %.3f m/s²",
+    "Minimum : %.3f m/s²",
+    "Min. : %.3f m/s²"
+  ],
+  "⚠ SPEC 초과 : %.3f": [
+    "⚠ SPEC 초과 : %.3f",
+    "⚠ SPEC exceeded : %.3f",
+    "⚠ Przekroczenie SPEC : %.3f"
+  ],
+  "회\n초과 후 3초 데이터 기록 중...": [
+    "회\n초과 후 3초 데이터 기록 중...",
+    " events\nRecording 3 seconds after the exceedance...",
+    " razy\nZapisywanie 3 s danych po przekroczeniu..."
+  ],
+  "회\n최근 이벤트 데이터 : ": [
+    "회\n최근 이벤트 데이터 : ",
+    " events\nLatest event samples : ",
+    " razy\nDane ostatniego zdarzenia : "
+  ],
+  "개 확보 완료": [
+    "개 확보 완료",
+    " samples recorded",
+    " próbek zapisano"
+  ],
+  "기록 없음": [
+    "기록 없음",
+    "No record",
+    "Brak zapisu"
+  ],
+  "🚨 Vibration SPEC 초과 알람\n\n": [
+    "🚨 Vibration SPEC 초과 알람\n\n",
+    "🚨 Vibration SPEC alert\n\n",
+    "🚨 Alarm przekroczenia SPEC drgań\n\n"
+  ],
+  "건물 : ": [
+    "건물 : ",
+    "Building : ",
+    "Budynek : "
+  ],
+  "발생시간 : ": [
+    "발생시간 : ",
+    "Event time : ",
+    "Czas zdarzenia : "
+  ],
+  "SPEC 초과량 : %.3f m/s²\n": [
+    "SPEC 초과량 : %.3f m/s²\n",
+    "SPEC exceedance : %.3f m/s²\n",
+    "Przekroczenie SPEC : %.3f m/s²\n"
+  ],
+  "데이터 수 : ": [
+    "데이터 수 : ",
+    "Sample count : ",
+    "Liczba danych : "
+  ],
+  "개": [
+    "개",
+    " samples",
+    " szt."
+  ],
+  "📍 같은 이벤트의 LGES ": [
+    "📍 같은 이벤트의 LGES ",
+    "📍 LGES location of the same event ",
+    "📍 Lokalizacja GPS LGES tego samego zdarzenia "
+  ],
+  " GPS 위치": [
+    " GPS 위치",
+    " GPS location",
+    " GPS"
+  ],
+  "Telegram 위치 맵 전송 성공": [
+    "Telegram 위치 맵 전송 성공",
+    "Telegram location map sent",
+    "Mapa lokalizacji wysłana przez Telegram"
+  ],
+  "Telegram 위치 맵 전송 실패 : ": [
+    "Telegram 위치 맵 전송 실패 : ",
+    "Telegram location map failed : ",
+    "Błąd wysyłania mapy Telegram : "
+  ],
+  "Telegram 이벤트 묶음 전송 성공": [
+    "Telegram 이벤트 묶음 전송 성공",
+    "Telegram event package sent",
+    "Pakiet zdarzenia wysłany przez Telegram"
+  ],
+  "Telegram 이벤트 묶음 전송 실패: ": [
+    "Telegram 이벤트 묶음 전송 실패: ",
+    "Telegram event package failed: ",
+    "Błąd wysyłania pakietu Telegram: "
+  ],
+  "상태 : 이벤트 기록 완료": [
+    "상태 : 이벤트 기록 완료",
+    "Status : event saved",
+    "Stan : zapis zdarzenia zakończony"
+  ],
+  "없음": [
+    "없음",
+    "None",
+    "Brak"
+  ],
+  "사진 : ": [
+    "사진 : ",
+    "Photo : ",
+    "Zdjęcie : "
+  ],
+  "사용 가능한 이메일 앱을 찾지 못했습니다.": [
+    "사용 가능한 이메일 앱을 찾지 못했습니다.",
+    "No email app is available.",
+    "Nie znaleziono aplikacji e-mail."
+  ],
+  "CSV 읽기 오류": [
+    "CSV 읽기 오류",
+    "CSV read error",
+    "Błąd odczytu CSV"
+  ],
+  "표시할 데이터가 없습니다.": [
+    "표시할 데이터가 없습니다.",
+    "No data to display.",
+    "Brak danych do wyświetlenia."
+  ],
+  "파일 : ": [
+    "파일 : ",
+    "File : ",
+    "Plik : "
+  ],
+  "\n데이터 수 : ": [
+    "\n데이터 수 : ",
+    "\nSample count : ",
+    "\nLiczba danych : "
+  ],
+  "\n평균값 : %.3f m/s²": [
+    "\n평균값 : %.3f m/s²",
+    "\nAverage : %.3f m/s²",
+    "\nŚrednia : %.3f m/s²"
+  ],
+  "\n최대값 : %.3f m/s²": [
+    "\n최대값 : %.3f m/s²",
+    "\nMaximum : %.3f m/s²",
+    "\nMaks. : %.3f m/s²"
+  ],
+  "\n최소값 : %.3f m/s²": [
+    "\n최소값 : %.3f m/s²",
+    "\nMinimum : %.3f m/s²",
+    "\nMin. : %.3f m/s²"
+  ],
+  "\nSPEC : %.2f m/s²": [
+    "\nSPEC : %.2f m/s²",
+    "\nSPEC : %.2f m/s²",
+    "\nSPEC : %.2f m/s²"
+  ],
+  "저장 진동 데이터": [
+    "저장 진동 데이터",
+    "Saved vibration data",
+    "Zapisane dane drgań"
+  ],
+  "현재 SPEC : %.2f m/s²": [
+    "현재 SPEC : %.2f m/s²",
+    "Current SPEC : %.2f m/s²",
+    "Aktualny SPEC : %.2f m/s²"
+  ],
+  "저장 이벤트 : ": [
+    "저장 이벤트 : ",
+    "Saved events : ",
+    "Zapisane zdarzenia : "
+  ],
+  "건": [
+    "건",
+    " events",
+    ""
+  ],
+  "\n저장된 CSV 이벤트가 없습니다.": [
+    "\n저장된 CSV 이벤트가 없습니다.",
+    "\nNo saved CSV events.",
+    "\nBrak zapisanych zdarzeń CSV."
+  ],
+  "이벤트 최대 진동 Trend": [
+    "이벤트 최대 진동 Trend",
+    "Event peak trend",
+    "Trend maksymalnych drgań zdarzeń"
+  ],
+  "\n최근 이벤트": [
+    "\n최근 이벤트",
+    "\nRecent events",
+    "\nOstatnie zdarzenia"
+  ],
+  "이벤트 #": [
+    "이벤트 #",
+    "Event #",
+    "Zdarzenie #"
+  ],
+  "\nSPEC %.2f   초과 +%.3f m/s²": [
+    "\nSPEC %.2f   초과 +%.3f m/s²",
+    "\nSPEC %.2f   exceeded by +%.3f m/s²",
+    "\nSPEC %.2f   przekroczenie +%.3f m/s²"
+  ],
+  "\n데이터 %,d개": [
+    "\n데이터 %,d개",
+    "\nSamples: %,d",
+    "\nDane: %,d"
+  ],
+  "통계 대시보드": [
+    "통계 대시보드",
+    "Statistics dashboard",
+    "Panel statystyk"
+  ],
+  "돌아가기": [
+    "돌아가기",
+    "Back",
+    "Wstecz"
+  ],
+  "\n파일 : ": [
+    "\n파일 : ",
+    "\nFile : ",
+    "\nPlik : "
+  ],
+  "\n건물 : ": [
+    "\n건물 : ",
+    "\nBuilding : ",
+    "\nBudynek : "
+  ],
+  "\n현재 SPEC : %.2f m/s²": [
+    "\n현재 SPEC : %.2f m/s²",
+    "\nCurrent SPEC : %.2f m/s²",
+    "\nAktualny SPEC : %.2f m/s²"
+  ],
+  "\nSPEC 초과량 : %.3f m/s²": [
+    "\nSPEC 초과량 : %.3f m/s²",
+    "\nSPEC exceedance : %.3f m/s²",
+    "\nPrzekroczenie SPEC : %.3f m/s²"
+  ],
+  "\nGPS 위치 : %.6f, %.6f": [
+    "\nGPS 위치 : %.6f, %.6f",
+    "\nGPS location : %.6f, %.6f",
+    "\nPozycja GPS : %.6f, %.6f"
+  ],
+  "\nGPS 위치 : 기록 없음": [
+    "\nGPS 위치 : 기록 없음",
+    "\nGPS location : no record",
+    "\nPozycja GPS : brak zapisu"
+  ],
+  "\nLGES WA5 이벤트 위치": [
+    "\nLGES WA5 이벤트 위치",
+    "\nLGES WA5 event location",
+    "\nLokalizacja zdarzenia LGES WA5"
+  ],
+  "\n이벤트 자동 촬영 사진": [
+    "\n이벤트 자동 촬영 사진",
+    "\nAutomatic event photo",
+    "\nAutomatyczne zdjęcie zdarzenia"
+  ],
+  "이벤트 상세 그래프": [
+    "이벤트 상세 그래프",
+    "Detailed event graph",
+    "Szczegółowy wykres zdarzenia"
+  ],
+  "이벤트 위치": [
+    "이벤트 위치",
+    "Event location",
+    "Lokalizacja zdarzenia"
+  ],
+  "GPS 오차 또는 건물 범위 밖": [
+    "GPS 오차 또는 건물 범위 밖",
+    "GPS error or outside building area",
+    "Błąd GPS lub poza obszarem budynku"
+  ],
+  "진동 통계 대시보드": [
+    "진동 통계 대시보드",
+    "Vibration statistics",
+    "Panel statystyk drgań"
+  ],
+  "오늘": [
+    "오늘",
+    "Today",
+    "Dzisiaj"
+  ],
+  "7일": [
+    "7일",
+    "7 days",
+    "7 dni"
+  ],
+  "30일": [
+    "30일",
+    "30 days",
+    "30 dni"
+  ],
+  "최근 7일": [
+    "최근 7일",
+    "Last 7 days",
+    "Ostatnie 7 dni"
+  ],
+  "최근 30일": [
+    "최근 30일",
+    "Last 30 days",
+    "Ostatnie 30 dni"
+  ],
+  "\n조회 기간 : ": [
+    "\n조회 기간 : ",
+    "\nPeriod : ",
+    "\nOkres : "
+  ],
+  "\n해당 기간에 저장된 이벤트가 없습니다.": [
+    "\n해당 기간에 저장된 이벤트가 없습니다.",
+    "\nNo saved events for this period.",
+    "\nBrak zapisanych zdarzeń w tym okresie."
+  ],
+  "판정 : ": [
+    "판정 : ",
+    "Assessment : ",
+    "Ocena : "
+  ],
+  "이벤트 수": [
+    "이벤트 수",
+    "Event count",
+    "Liczba zdarzeń"
+  ],
+  "기간 최대값": [
+    "기간 최대값",
+    "Period maximum",
+    "Maksimum okresu"
+  ],
+  "이벤트 평균값": [
+    "이벤트 평균값",
+    "Event average",
+    "Średnia zdarzeń"
+  ],
+  "SPEC 초과 이벤트": [
+    "SPEC 초과 이벤트",
+    "Events above SPEC",
+    "Zdarzenia > SPEC"
+  ],
+  "SPEC 초과율": [
+    "SPEC 초과율",
+    "SPEC exceedance rate",
+    "Wskaźnik przekroczeń SPEC"
+  ],
+  "\n날짜별 MAX / AVG Trend": [
+    "\n날짜별 MAX / AVG Trend",
+    "\nDaily MAX / AVG trend",
+    "\nTrend MAX / AVG wg daty"
+  ],
+  "\n날짜별 요약": [
+    "\n날짜별 요약",
+    "\nDaily summary",
+    "\nPodsumowanie wg daty"
+  ],
+  "\nMAX %.3f   AVG %.3f   초과 %d/%d건": [
+    "\nMAX %.3f   AVG %.3f   초과 %d/%d건",
+    "\nMAX %.3f   AVG %.3f   exceeded %d/%d",
+    "\nMAX %.3f   AVG %.3f   ponad SPEC %d/%d"
+  ],
+  "PROCESS SHOCK\nPROFILER": [
+    "공정 충격\n분석",
+    "PROCESS SHOCK\nPROFILER",
+    "ANALIZA WSTRZĄSÓW\nPROCESU"
+  ],
+  "FIELD ANALYZER · CONTINUOUS IMPACT BLACKBOX": [
+    "현장 분석 · 연속 충격 기록",
+    "FIELD ANALYZER · CONTINUOUS IMPACT RECORDING",
+    "ANALIZA NA LINII · CIĄGŁA REJESTRACJA WSTRZĄSÓW"
+  ],
+  "● READY": [
+    "● 준비 완료",
+    "● READY",
+    "● GOTOWY"
+  ],
+  "CAMERA : CHECKING...": [
+    "카메라 : 확인 중",
+    "CAMERA : CHECKING...",
+    "KAMERA : SPRAWDZANIE..."
+  ],
+  "LINE": [
+    "라인",
+    "LINE",
+    "LINIA"
+  ],
+  "Line": [
+    "라인",
+    "Line",
+    "Linia"
+  ],
+  "EQUIPMENT": [
+    "설비",
+    "EQUIPMENT",
+    "URZĄDZENIE"
+  ],
+  "PROCESS": [
+    "공정",
+    "PROCESS",
+    "PROCES"
+  ],
+  "AUTO TIMELINE": [
+    "자동 시간구간",
+    "AUTO TIMELINE",
+    "AUTO CZAS"
+  ],
+  "MANUAL UNIT": [
+    "수동 유닛",
+    "MANUAL UNIT",
+    "MODUŁ RĘCZNIE"
+  ],
+  "UNIT": [
+    "유닛",
+    "UNIT",
+    "MODUŁ"
+  ],
+  "UNIT SEGMENT : READY": [
+    "유닛 구간 : 준비 완료",
+    "UNIT SEGMENT : READY",
+    "SEGMENT MODUŁU : GOTOWY"
+  ],
+  "REAL 00:00 · PROCESS 00:00 · READY": [
+    "실제 00:00 · 공정 00:00 · 준비 완료",
+    "REAL 00:00 · PROCESS 00:00 · READY",
+    "CZAS 00:00 · PROCES 00:00 · GOTOWY"
+  ],
+  "PAUSE": [
+    "시간 일시정지",
+    "PAUSE CLOCK",
+    "PAUZA CZASU"
+  ],
+  "TOTAL IMPACT": [
+    "현재 합성 가속도",
+    "CURRENT TOTAL ACCELERATION",
+    "AKTUALNE PRZYSPIESZENIE WYPADKOWE"
+  ],
+  "PROCESS / IMPACT TIMELINE": [
+    "공정 / 충격 시간축",
+    "PROCESS / IMPACT TIMELINE",
+    "OŚ CZASU PROCESU / WSTRZĄSÓW"
+  ],
+  "LAST IMPACT : -\n이벤트 발생 시 사진 · 전후 트렌드 · CSV · 요약을 자동 저장합니다.": [
+    "LAST IMPACT : -\n이벤트 발생 시 사진 · 전후 트렌드 · CSV · 요약을 자동 저장합니다.",
+    "LAST IMPACT : -\nPhotos, pre/post trends, CSV and summaries are saved automatically on an event.",
+    "OSTATNIE UDERZENIE : -\nPo zdarzeniu automatycznie zapisywane są zdjęcie, trend, CSV i podsumowanie."
+  ],
+  "EVENT HISTORY": [
+    "이벤트 이력",
+    "EVENT HISTORY",
+    "HISTORIA"
+  ],
+  "DATA DOWNLOAD": [
+    "데이터 저장",
+    "DATA DOWNLOAD",
+    "POBIERZ"
+  ],
+  "REMOTE VIEW": [
+    "원격 연결",
+    "REMOTE VIEW",
+    "ZDALNIE"
+  ],
+  "START MONITORING": [
+    "측정 시작",
+    "START MEASUREMENT",
+    "START POMIARU"
+  ],
+  "STOP & ANALYZE": [
+    "측정 종료 · 분석",
+    "STOP & ANALYZE",
+    "STOP I ANALIZA"
+  ],
+  "측정 중에는 MCSC를 변경할 수 없습니다.": [
+    "측정 중에는 MCSC를 변경할 수 없습니다.",
+    "MCSC cannot be changed during measurement.",
+    "Nie można zmieniać MCSC podczas pomiaru."
+  ],
+  "AUTO STOP CORRECTION": [
+    "자동 정지 추정 보정",
+    "AUTO STOP CORRECTION",
+    "KOREKTA POSTOJU"
+  ],
+  "저진동 상태가 3초 이상 지속되면 설비 정지 후보로 보고 PROCESS 시간만 자동 보정합니다. ": [
+    "저진동 상태가 3초 이상 지속되면 설비 정지 후보로 보고 PROCESS 시간만 자동 보정합니다. ",
+    "Low vibration lasting at least 3 seconds is treated as a possible stop; only the process clock is corrected. ",
+    "Jeśli niski poziom drgań trwa ponad 3 s, system traktuje to jako możliwy postój i koryguje tylko czas procesu. "
+  ],
+  "공정 자체에 3초 이상의 정숙 구간이 많으면 OFF로 사용하세요.": [
+    "공정 자체에 3초 이상의 정숙 구간이 많으면 OFF로 사용하세요.",
+    "Turn OFF if the process normally contains quiet periods longer than 3 seconds.",
+    "Jeśli proces ma wiele naturalnych cichych odcinków >3 s, użyj trybu OFF."
+  ],
+  "MCSC · UNIT TIME MAP": [
+    "MCSC · 유닛 시간 설정",
+    "MCSC · UNIT TIME MAP",
+    "MCSC · CZASY MODUŁÓW"
+  ],
+  "ENGINEER MCSC · 0.1초 단위 설정\n": [
+    "ENGINEER MCSC · 0.1초 단위 설정\n",
+    "ENGINEER MCSC · 0.1-second increments\n",
+    "MCSC DLA INŻYNIERA · krok 0,1 s\n"
+  ],
+  "한 줄에 Unit 이름, 기준시간(초)\n": [
+    "한 줄에 Unit 이름, 기준시간(초)\n",
+    "One unit name and duration (seconds) per line\n",
+    "W każdym wierszu: nazwa modułu, czas bazowy (s)\n"
+  ],
+  "설비가 멈추면 PROCESS PAUSE를 누르면\n": [
+    "설비가 멈추면 PROCESS PAUSE를 누르면\n",
+    "When the equipment stops, press PROCESS PAUSE.\n",
+    "Gdy urządzenie się zatrzyma, naciśnij PROCESS PAUSE\n"
+  ],
+  "진동 측정은 계속하고 공정시간만 멈춥니다.": [
+    "진동 측정은 계속하고 공정시간만 멈춥니다.",
+    "Vibration recording continues; only the process clock pauses.",
+    "Pomiar drgań trwa dalej, zatrzymuje się tylko czas procesu."
+  ],
+  "저장": [
+    "저장",
+    "Save",
+    "Zapisz"
+  ],
+  "MCSC 형식을 확인해주세요.": [
+    "MCSC 형식을 확인해주세요.",
+    "Check the MCSC format.",
+    "Sprawdź format MCSC."
+  ],
+  "개 Unit 저장 완료": [
+    "개 Unit 저장 완료",
+    " units saved",
+    " modułów zapisano"
+  ],
+  "취소": [
+    "취소",
+    "Cancel",
+    "Anuluj"
+  ],
+  "AUTO TIMELINE · ": [
+    "자동 시간구간 · ",
+    "AUTO TIMELINE · ",
+    "AUTO CZAS · "
+  ],
+  " Units · ": [
+    " Units · ",
+    " Units · ",
+    " modułów · "
+  ],
+  "MANUAL UNIT · READY": [
+    "수동 유닛 · 준비 완료",
+    "MANUAL UNIT · READY",
+    "MODUŁ RĘCZNIE · GOTOWY"
+  ],
+  "RESUME": [
+    "시간 재개",
+    "RESUME CLOCK",
+    "WZNÓW CZAS"
+  ],
+  "● MANUAL LINE STOP · PROCESS TIME PAUSED": [
+    "● MANUAL LINE STOP · PROCESS TIME PAUSED",
+    "● MANUAL LINE STOP · PROCESS TIME PAUSED",
+    "● RĘCZNY STOP LINII · CZAS PROCESU WSTRZYMANY"
+  ],
+  "● MONITORING · AUTO TIMELINE · MANUAL OVERRIDE": [
+    "● MONITORING · AUTO TIMELINE · MANUAL OVERRIDE",
+    "● MONITORING · AUTO TIMELINE · MANUAL OVERRIDE",
+    "● MONITORING · AUTO OŚ CZASU · RĘCZNE NADPISANIE"
+  ],
+  "● AUTO LINE STOP #": [
+    "● AUTO LINE STOP #",
+    "● AUTO LINE STOP #",
+    "● AUTO STOP LINII #"
+  ],
+  " · TIMELINE HOLD": [
+    " · TIMELINE HOLD",
+    " · TIMELINE HOLD",
+    " · OŚ CZASU WSTRZYMANA"
+  ],
+  "● AUTO RESUME · CORRECTED %.1fs": [
+    "● AUTO RESUME · CORRECTED %.1fs",
+    "● AUTO RESUME · CORRECTED %.1fs",
+    "● AUTO WZNOWIENIE · KOREKTA %.1fs"
+  ],
+  "● STOP CANDIDATE %.1fs · AUTO CORR ARMED": [
+    "● STOP CANDIDATE %.1fs · AUTO CORR ARMED",
+    "● STOP CANDIDATE %.1fs · AUTO CORR ARMED",
+    "● MOŻLIWY STOP %.1fs · AUTO KOREKTA AKTYWNA"
+  ],
+  "● MONITORING · AUTO TIMELINE": [
+    "● 측정 중 · 자동 시간구간",
+    "● MONITORING · AUTO TIMELINE",
+    "● POMIAR · AUTO CZAS"
+  ],
+  "가속도 센서가 없습니다.": [
+    "가속도 센서가 없습니다.",
+    "No accelerometer is available.",
+    "Brak czujnika przyspieszenia."
+  ],
+  "AUTO TIMELINE MCSC가 없습니다.": [
+    "AUTO TIMELINE MCSC가 없습니다.",
+    "No MCSC schedule is configured for auto timeline mode.",
+    "Brak mapy MCSC dla automatycznej osi czasu."
+  ],
+  "UNIT SEGMENT : CALIBRATING": [
+    "UNIT SEGMENT : CALIBRATING",
+    "UNIT SEGMENT : CALIBRATING",
+    "SEGMENT MODUŁU : KALIBRACJA"
+  ],
+  "LAST IMPACT : -\n측정 중 공정/UNIT을 변경하면 구간별 Peak/RMS/Impact를 자동 비교합니다.": [
+    "LAST IMPACT : -\n측정 중 공정/UNIT을 변경하면 구간별 Peak/RMS/Impact를 자동 비교합니다.",
+    "LAST IMPACT : -\nChanging the process/unit divides measurements into sections for Peak/RMS/Impact comparison.",
+    "OSTATNIE UDERZENIE : -\nZmiana procesu/modułu podczas pomiaru automatycznie porównuje Peak/RMS/Impact."
+  ],
+  "REAL 00:00 · PROCESS 00:00 · CALIBRATING": [
+    "REAL 00:00 · PROCESS 00:00 · CALIBRATING",
+    "REAL 00:00 · PROCESS 00:00 · CALIBRATING",
+    "RZECZ. 00:00 · PROCES 00:00 · KALIBRACJA"
+  ],
+  "● STOPPED / ANALYSIS READY": [
+    "● 측정 종료 / 분석 완료",
+    "● STOPPED / ANALYSIS READY",
+    "● POMIAR ZAKOŃCZONY / ANALIZA GOTOWA"
+  ],
+  "Background monitor 시작 실패: ": [
+    "Background monitor 시작 실패: ",
+    "Background monitor failed to start: ",
+    "Błąd uruchomienia monitoringu w tle: "
+  ],
+  "● MONITORING · MANUAL UNIT": [
+    "● 측정 중 · 수동 유닛",
+    "● MONITORING · MANUAL UNIT",
+    "● POMIAR · MODUŁ RĘCZNIE"
+  ],
+  "센서 안정화 완료 · 연속 공정 감시 시작": [
+    "센서 안정화 완료 · 연속 공정 감시 시작",
+    "Sensor stabilized · continuous monitoring started",
+    "Stabilizacja czujnika zakończona · start ciągłego monitoringu procesu"
+  ],
+  "· PAUSED": [
+    "· 시간정지",
+    "· PAUSED",
+    "· PAUZA"
+  ],
+  "LAST IMPACT #%03d · %s > %s\nPEAK %.3f | RMS %.3f | %.2fs | %s AXIS\n사진 · 그래프 · CSV · 요약 저장 중...": [
+    "LAST IMPACT #%03d · %s > %s\nPEAK %.3f | RMS %.3f | %.2fs | %s AXIS\n사진 · 그래프 · CSV · 요약 저장 중...",
+    "LAST IMPACT #%03d · %s > %s\nPEAK %.3f | RMS %.3f | %.2fs | %s AXIS\nSaving photo, graph, CSV and summary...",
+    "OSTATNIE UDERZENIE #%03d · %s > %s\nPEAK %.3f | RMS %.3f | %.2fs | OŚ %s\nZapisywanie zdjęcia, wykresu, CSV i podsumowania..."
+  ],
+  "● MONITORING · BACKGROUND READY": [
+    "● 측정 중 · 백그라운드 준비",
+    "● MONITORING · BACKGROUND READY",
+    "● POMIAR · TŁO GOTOWE"
+  ],
+  "\nTelegram : 설정 없음 · Local 저장 완료": [
+    "\nTelegram : 설정 없음 · Local 저장 완료",
+    "\nTelegram : not configured · saved locally",
+    "\nTelegram : brak konfiguracji · zapis lokalny zakończony"
+  ],
+  " 블랙박스 저장 완료": [
+    " 블랙박스 저장 완료",
+    " · event data saved",
+    " · zapis blackbox zakończony"
+  ],
+  "PROCESS SHOCK EVENT #": [
+    "PROCESS SHOCK EVENT #",
+    "PROCESS SHOCK EVENT #",
+    "ZDARZENIE UDERZENIA PROCESU #"
+  ],
+  "Main Direction : ": [
+    "Main Direction : ",
+    "Main Direction : ",
+    "Główny kierunek : "
+  ],
+  "Window : PRE 3 sec + IMPACT CORE + POST 3 sec": [
+    "Window : PRE 3 sec + IMPACT CORE + POST 3 sec",
+    "Window : PRE 3 sec + IMPACT CORE + POST 3 sec",
+    "Okno : PRE 3 s + RDZEŃ UDERZENIA + POST 3 s"
+  ],
+  "측정을 종료한 뒤 DATA DOWNLOAD를 실행해주세요.": [
+    "측정을 종료한 뒤 DATA DOWNLOAD를 실행해주세요.",
+    "Stop measurement before using DATA DOWNLOAD.",
+    "Zakończ pomiar przed użyciem POBIERZ DANE."
+  ],
+  "다운로드할 측정 데이터가 없습니다.": [
+    "다운로드할 측정 데이터가 없습니다.",
+    "No measurement data to download.",
+    "Brak danych pomiarowych do pobrania."
+  ],
+  "전체 데이터 ZIP": [
+    "전체 데이터 ZIP",
+    "All data ZIP",
+    "Pełny pakiet ZIP"
+  ],
+  "전체 RAW CSV": [
+    "전체 RAW CSV",
+    "Full RAW CSV",
+    "Pełny RAW CSV"
+  ],
+  "RUN SUMMARY CSV": [
+    "전체 측정 요약 CSV",
+    "RUN SUMMARY CSV",
+    "PODSUMOWANIE POMIARU CSV"
+  ],
+  "UNIT SUMMARY CSV": [
+    "유닛 요약 CSV",
+    "UNIT SUMMARY CSV",
+    "PODSUMOWANIE MODUŁÓW CSV"
+  ],
+  "IMPACT SUMMARY CSV": [
+    "충격 요약 CSV",
+    "IMPACT SUMMARY CSV",
+    "PODSUMOWANIE WSTRZĄSÓW CSV"
+  ],
+  "RAW + 전체 평가 + 사진 + 그래프 + Event CSV": [
+    "RAW + 전체 평가 + 사진 + 그래프 + Event CSV",
+    "RAW + all evaluations + photos + graphs + event CSV",
+    "RAW + pełna ocena + zdjęcia + wykresy + CSV zdarzeń"
+  ],
+  "측정 시작부터 종료까지 모든 X / Y / Z / Total": [
+    "측정 시작부터 종료까지 모든 X / Y / Z / Total",
+    "All X / Y / Z / Total samples from start to stop",
+    "Wszystkie X / Y / Z / Total od startu do końca pomiaru"
+  ],
+  "전체 측정시간 / Peak / RMS / 방향 / MCSC": [
+    "전체 측정시간 / Peak / RMS / 방향 / MCSC",
+    "Total time / Peak / RMS / direction / MCSC",
+    "Cały czas pomiaru / Peak / RMS / kierunek / MCSC"
+  ],
+  "MCSC Unit별 시간 / Avg / Min / Max / RMS / Impact": [
+    "MCSC Unit별 시간 / Avg / Min / Max / RMS / Impact",
+    "MCSC unit time / Avg / Min / Max / RMS / Impact",
+    "Czas modułów MCSC / Avg / Min / Max / RMS / Impact"
+  ],
+  "충격 이벤트별 Peak / RMS / 방향 / 시간": [
+    "충격 이벤트별 Peak / RMS / 방향 / 시간",
+    "Peak / RMS / direction / time per impact",
+    "Peak / RMS / kierunek / czas każdego zdarzenia"
+  ],
+  "충격 당시 사진 + 그래프 + Event CSV + 요약": [
+    "충격 당시 사진 + 그래프 + Event CSV + 요약",
+    "Impact photo + graph + event CSV + summary",
+    "Zdjęcie + wykres + CSV + podsumowanie dla uderzenia"
+  ],
+  "저장 위치 : Download / VibrationMonitor": [
+    "저장 위치 : Download / VibrationMonitor",
+    "Saved in : Download / VibrationMonitor",
+    "Lokalizacja : Download / VibrationMonitor"
+  ],
+  "MEASUREMENT DATA DOWNLOAD": [
+    "측정 데이터 저장",
+    "MEASUREMENT DATA DOWNLOAD",
+    "POBIERANIE DANYCH"
+  ],
+  "다운로드 완료\nDownload/VibrationMonitor/": [
+    "다운로드 완료\nDownload/VibrationMonitor/",
+    "Download complete\nDownload/VibrationMonitor/",
+    "Pobieranie zakończone\nDownload/VibrationMonitor/"
+  ],
+  "다운로드 실패 또는 해당 데이터가 없습니다.": [
+    "다운로드 실패 또는 해당 데이터가 없습니다.",
+    "Download failed or no data is available.",
+    "Pobieranie nieudane lub brak danych."
+  ],
+  "측정 종료 후 MCSC Timeline Review를 실행해주세요.": [
+    "측정 종료 후 MCSC Timeline Review를 실행해주세요.",
+    "Stop measurement before reviewing the MCSC timeline.",
+    "Uruchom przegląd osi MCSC po zakończeniu pomiaru."
+  ],
+  "측정 후 실제 설비 진행시간에 맞게 Unit 이름/시간을 0.1초 단위로 수정하세요. ": [
+    "측정 후 실제 설비 진행시간에 맞게 Unit 이름/시간을 0.1초 단위로 수정하세요. ",
+    "After measurement, edit unit names/durations in 0.1-second increments to match actual equipment timing. ",
+    "Po pomiarze popraw nazwy/czasy modułów co 0,1 s zgodnie z rzeczywistym przebiegiem urządzenia. "
+  ],
+  "적용 시 Production Impact의 Unit 위치와 Unit Summary를 RAW 데이터 기준으로 다시 계산합니다. ": [
+    "적용 시 Production Impact의 Unit 위치와 Unit Summary를 RAW 데이터 기준으로 다시 계산합니다. ",
+    "Applying this recalculates production impact unit assignments and unit summaries from RAW data. ",
+    "Po zastosowaniu pozycje modułów i podsumowanie są przeliczane z danych RAW. "
+  ],
+  "원본 RAW/Event Blackbox는 변경하지 않습니다.": [
+    "원본 RAW/Event Blackbox는 변경하지 않습니다.",
+    "Original RAW / Event Blackbox data is not changed.",
+    "Oryginalne RAW / Event Blackbox nie są zmieniane."
+  ],
+  "MCSC TIMELINE REVIEW": [
+    "MCSC 시간구간 검토",
+    "MCSC TIMELINE REVIEW",
+    "PRZEGLĄD MCSC"
+  ],
+  "MCSC Timeline 재계산 완료 · 원본 RAW/Blackbox 보존": [
+    "MCSC Timeline 재계산 완료 · 원본 RAW/Blackbox 보존",
+    "MCSC recalculated · original RAW/Blackbox preserved",
+    "Przeliczenie MCSC zakończone · RAW/Blackbox zachowane"
+  ],
+  "AVG=평균 · MIN=최소 · MAX=최대 · RMS=진동수준 · IMP=충격횟수 · SMP=샘플수": [
+    "AVG=평균 · MIN=최소 · MAX=최대 · RMS=진동수준 · IMP=충격횟수 · SMP=샘플수",
+    "AVG=average · MIN=minimum · MAX=maximum · RMS=RMS level · IMP=impacts · SMP=samples",
+    "AVG=średnia · MIN=min · MAX=max · RMS=poziom drgań · IMP=uderzenia · SMP=próbki"
+  ],
+  "TOP PRODUCTION IMPACT : 없음": [
+    "TOP PRODUCTION IMPACT : 없음",
+    "TOP PRODUCTION IMPACT : none",
+    "NAJWIĘKSZE UDERZENIE PRODUKCYJNE : brak"
+  ],
+  "측정시간  %02d:%02d:%02d\n": [
+    "측정시간  %02d:%02d:%02d\n",
+    "Measurement time  %02d:%02d:%02d\n",
+    "Czas pomiaru  %02d:%02d:%02d\n"
+  ],
+  "Impact  %d회 · Production %d · Stop/Resume %d\n": [
+    "Impact  %d회 · Production %d · Stop/Resume %d\n",
+    "Impact  %d · Production %d · Stop/Resume %d\n",
+    "Impact  %d · Produkcja %d · Stop/Resume %d\n"
+  ],
+  "최대 Peak  %.3f m/s²\n": [
+    "최대 Peak  %.3f m/s²\n",
+    "Maximum peak  %.3f m/s²\n",
+    "Maks. Peak  %.3f m/s²\n"
+  ],
+  "주 충격 방향  %s AXIS\n": [
+    "주 충격 방향  %s AXIS\n",
+    "Main impact direction  %s AXIS\n",
+    "Główny kierunek uderzenia  OŚ %s\n"
+  ],
+  "PRODUCTION EVENT PEAK COMPARISON": [
+    "생산 충격 최대값 비교",
+    "PRODUCTION EVENT PEAK COMPARISON",
+    "PORÓWNANIE WSTRZĄSÓW PRODUKCYJNYCH"
+  ],
+  "STOP / RESUME IMPACTS · SEPARATE FROM UNIT RANKING": [
+    "정지 / 재가동 충격 · 생산 순위와 분리",
+    "STOP / RESUME IMPACTS · EXCLUDED FROM UNIT RANKING",
+    "WSTRZĄSY STOP / START · POZA RANKINGIEM PRODUKCJI"
+  ],
+  "MCSC UNIT VIBRATION ANALYSIS · AVG / MIN / MAX / RMS": [
+    "MCSC 유닛별 진동 · 평균 / 최소 / 최대 / RMS",
+    "MCSC UNIT VIBRATION · AVG / MIN / MAX / RMS",
+    "DRGANIA MODUŁÓW MCSC · ŚR. / MIN / MAKS. / RMS"
+  ],
+  "PRODUCTION UNIT RANKING · MAX / RMS / IMPACT / TIME": [
+    "유닛 순위 · 최대 / RMS / 충격 / 시간",
+    "UNIT RANKING · MAX / RMS / IMPACTS / TIME",
+    "RANKING MODUŁÓW · MAKS. / RMS / WSTRZĄSY / CZAS"
+  ],
+  "MCSC TIMELINE REVIEW / CORRECTION": [
+    "MCSC 시간구간 검토 / 수정",
+    "MCSC TIMELINE REVIEW / CORRECTION",
+    "PRZEGLĄD / KOREKTA MCSC"
+  ],
+  "↑ ↓  스크롤하여 전체 Unit 비교": [
+    "↑ ↓  스크롤하여 전체 Unit 비교",
+    "↑ ↓  Scroll to compare all units",
+    "↑ ↓  Przewiń, aby porównać wszystkie moduły"
+  ],
+  "SESSION SUMMARY": [
+    "측정 결과 요약",
+    "SESSION SUMMARY",
+    "PODSUMOWANIE POMIARU"
+  ],
+  "IMPACT EVENT HISTORY": [
+    "충격 이벤트 이력",
+    "IMPACT EVENT HISTORY",
+    "HISTORIA WSTRZĄSÓW"
+  ],
+  "저장된 충격 이벤트가 없습니다.": [
+    "저장된 충격 이벤트가 없습니다.",
+    "No saved impact events.",
+    "Brak zapisanych zdarzeń uderzeniowych."
+  ],
+  "IMPACT TREND": [
+    "충격 그래프",
+    "IMPACT TREND",
+    "WYKRES WSTRZĄSU"
+  ],
+  "IMPACT DETAIL": [
+    "충격 상세",
+    "IMPACT DETAILS",
+    "SZCZEGÓŁY WSTRZĄSU"
+  ],
+  "읽기 오류 : ": [
+    "읽기 오류 : ",
+    "Read error : ",
+    "Błąd odczytu : "
+  ],
+  "REMOTE MONITOR": [
+    "REMOTE MONITOR",
+    "REMOTE MONITOR",
+    "MONITOR ZDALNY"
+  ],
+  "Remote Monitor 서버를 시작하지 못했습니다.\n": [
+    "Remote Monitor 서버를 시작하지 못했습니다.\n",
+    "Could not start the remote monitor server.\n",
+    "Nie udało się uruchomić serwera zdalnego monitoringu.\n"
+  ],
+  "Wi-Fi/Hotspot 상태를 확인한 뒤 다시 시도해주세요.": [
+    "Wi-Fi/Hotspot 상태를 확인한 뒤 다시 시도해주세요.",
+    "Check Wi-Fi/hotspot and try again.",
+    "Sprawdź Wi-Fi/Hotspot i spróbuj ponownie."
+  ],
+  "READ ONLY · 같은 Wi-Fi 또는 Hotspot에서 사용\n\n": [
+    "READ ONLY · 같은 Wi-Fi 또는 Hotspot에서 사용\n\n",
+    "VIEWER · use the same Wi-Fi or hotspot\n\n",
+    "PODGLĄD / STEROWANIE · użyj tej samej sieci Wi-Fi lub Hotspot\n\n"
+  ],
+  "IP 주소를 찾지 못했습니다.\n": [
+    "IP 주소를 찾지 못했습니다.\n",
+    "No local IP address found.\n",
+    "Nie znaleziono adresu IP.\n"
+  ],
+  "두 폰을 같은 Wi-Fi/Hotspot에 연결한 뒤 다시 열어주세요.": [
+    "두 폰을 같은 Wi-Fi/Hotspot에 연결한 뒤 다시 열어주세요.",
+    "Connect both phones to the same Wi-Fi/hotspot and reopen this screen.",
+    "Połącz oba telefony z tą samą siecią Wi-Fi/Hotspot i otwórz ponownie."
+  ],
+  "다른 폰의 Chrome/Samsung Internet에서 아래 주소를 여세요.\n\n": [
+    "다른 폰의 Chrome/Samsung Internet에서 아래 주소를 여세요.\n\n",
+    "Open the address below in Safari/Chrome on the other phone.\n\n",
+    "Na drugim telefonie otwórz poniższy adres w Chrome/Safari.\n\n"
+  ],
+  "\n\nSTART / PAUSE / RESUME / STOP 원격조작 가능": [
+    "\n\nSTART / PAUSE / RESUME / STOP 원격조작 가능",
+    "\n\nRemote START / PAUSE / RESUME / STOP available",
+    "\n\nDostępne sterowanie zdalne: START / PAUSE / RESUME / STOP"
+  ],
+  "실시간 화면은 보기 전용입니다.": [
+    "실시간 화면은 보기 전용입니다.",
+    "The live display is read-only.",
+    "Ekran czasu rzeczywistego jest tylko do podglądu."
+  ],
+  "Remote URL 복사 완료": [
+    "Remote URL 복사 완료",
+    "Remote URL copied",
+    "Adres Remote skopiowany"
+  ],
+  "Remote Monitor 종료": [
+    "Remote Monitor 종료",
+    "Remote monitor stopped",
+    "Monitor zdalny zatrzymany"
+  ],
+  "Process Shock Monitoring": [
+    "Process Shock Monitoring",
+    "Process Shock Monitoring",
+    "Monitorowanie uderzeń procesu"
+  ],
+  "Keeps continuous equipment impact monitoring active.": [
+    "Keeps continuous equipment impact monitoring active.",
+    "Keeps continuous equipment impact monitoring active.",
+    "Utrzymuje ciągłe monitorowanie uderzeń urządzenia."
+  ],
+  "연속 충격 측정이 진행 중입니다.": [
+    "연속 충격 측정이 진행 중입니다.",
+    "Continuous impact measurement is running.",
+    "Trwa ciągły pomiar uderzeń."
+  ],
+  "<title>Process Shock Remote</title>": [
+    "<title>Process Shock Remote</title>",
+    "<title>Process Shock Remote</title>",
+    "<title>Zdalny monitor uderzeń procesu</title>"
+  ],
+  "PROCESS SHOCK REMOTE": [
+    "공정 충격 원격 화면",
+    "PROCESS SHOCK REMOTE",
+    "ZDALNY MONITOR WSTRZĄSÓW"
+  ],
+  "VIEW + CONTROL · Wi-Fi / Hotspot": [
+    "조회 + 측정 조작 · Wi-Fi / 핫스팟",
+    "VIEW + CONTROL · Wi-Fi / HOTSPOT",
+    "PODGLĄD + STEROWANIE · Wi-Fi / HOTSPOT"
+  ],
+  "CONNECTING...": [
+    "CONNECTING...",
+    "CONNECTING...",
+    "ŁĄCZENIE..."
+  ],
+  "Last update : waiting...": [
+    "최근 수신 : 대기 중",
+    "Last update : waiting...",
+    "Ostatnia aktualizacja : oczekiwanie..."
+  ],
+  "TOTAL": [
+    "합성값",
+    "TOTAL",
+    "WYPADKOWA"
+  ],
+  "PEAK": [
+    "최대값",
+    "PEAK",
+    "MAKS."
+  ],
+  "X / Y / Z / TOTAL · SPEC red line": [
+    "X / Y / Z / TOTAL · SPEC red line",
+    "X / Y / Z / TOTAL · SPEC red line",
+    "X / Y / Z / TOTAL · czerwona linia SPEC"
+  ],
+  "MCSC / IMPACT TIMELINE": [
+    "MCSC / 충격 시간축",
+    "MCSC / IMPACT TIMELINE",
+    "MCSC / OŚ CZASU WSTRZĄSÓW"
+  ],
+  "REMOTE CONTROL": [
+    "원격 측정 조작",
+    "REMOTE MEASUREMENT CONTROL",
+    "ZDALNE STEROWANIE POMIAREM"
+  ],
+  "Control PIN required · STOP asks confirmation": [
+    "조작 PIN 필요 · 종료 전 확인",
+    "Control PIN required · STOP asks confirmation",
+    "Wymagany PIN · STOP wymaga potwierdzenia"
+  ],
+  "6-digit Control PIN": [
+    "6자리 조작 PIN",
+    "6-digit Control PIN",
+    "6-cyfrowy PIN sterowania"
+  ],
+  ">PAUSE<": [
+    ">PAUSE<",
+    ">PAUSE<",
+    ">PAUZA<"
+  ],
+  ">RESUME<": [
+    ">RESUME<",
+    ">RESUME<",
+    ">WZNÓW<"
+  ],
+  "LAST IMPACT": [
+    "최근 충격",
+    "LAST IMPACT",
+    "OSTATNI WSTRZĄS"
+  ],
+  "Remote commands are logged on equipment phone.": [
+    "Remote commands are logged on equipment phone.",
+    "Remote commands are logged on equipment phone.",
+    "Polecenia zdalne są zapisywane w telefonie urządzenia."
+  ],
+  "Control PIN 6자리를 입력하세요.": [
+    "Control PIN 6자리를 입력하세요.",
+    "Enter the 6-digit Control PIN.",
+    "Wprowadź 6-cyfrowy PIN sterowania."
+  ],
+  "CONTROL CONNECTION ERROR": [
+    "CONTROL CONNECTION ERROR",
+    "CONTROL CONNECTION ERROR",
+    "BŁĄD POŁĄCZENIA STEROWANIA"
+  ],
+  "STOP & ANALYZE를 원격 실행하시겠습니까?": [
+    "STOP & ANALYZE를 원격 실행하시겠습니까?",
+    "Stop measurement and analyze?",
+    "Czy zdalnie wykonać STOP I ANALIZĘ?"
+  ],
+  "Last update : ": [
+    "Last update : ",
+    "Last update : ",
+    "Ostatnia aktualizacja : "
+  ],
+  "s ago": [
+    "s ago",
+    "s ago",
+    " s temu"
+  ],
+  "● CALIBRATING": [
+    "● 센서 안정화 중",
+    "● SENSOR STABILIZATION",
+    "● STABILIZACJA CZUJNIKA"
+  ],
+  "● LIVE MONITORING": [
+    "● 실시간 측정 중",
+    "● LIVE MONITORING",
+    "● POMIAR NA ŻYWO"
+  ],
+  "● READY / STOPPED": [
+    "● 대기 / 측정 종료",
+    "● READY / STOPPED",
+    "● GOTOWY / ZATRZYMANY"
+  ],
+  "PROCESS ": [
+    "PROCESS ",
+    "PROCESS ",
+    "PROCES "
+  ],
+  "Unit ": [
+    "Unit ",
+    "Unit ",
+    "Moduł "
+  ],
+  "● RECONNECTING...": [
+    "● 재연결 중",
+    "● RECONNECTING...",
+    "● PONOWNE ŁĄCZENIE..."
+  ],
+  "● CONNECTION LOST · RETRYING": [
+    "● 연결 끊김 · 재시도 중",
+    "● CONNECTION LOST · RETRYING",
+    "● BRAK POŁĄCZENIA · PONAWIANIE"
+  ],
+  "VIBRATION MONITOR": [
+    "진동 모니터",
+    "VIBRATION MONITOR",
+    "MONITOR DRGAŃ"
+  ],
+  "ALL": [
+    "전체",
+    "ALL",
+    "WSZYSTKIE"
+  ],
+  "SPEC / Threshold": [
+    "SPEC / 판정 기준",
+    "SPEC / Threshold",
+    "SPEC / Próg"
+  ],
+  "Sampling : %.1f Hz": [
+    "실측 샘플링 : %.1f Hz",
+    "Sampling : %.1f Hz",
+    "Próbkowanie : %.1f Hz"
+  ],
+  "Sampling : 0.0 Hz": [
+    "샘플링 : 0.0 Hz",
+    "Sampling : 0.0 Hz",
+    "Próbkowanie : 0.0 Hz"
+  ],
+  "CAMERA : READY": [
+    "카메라 : 준비 완료",
+    "CAMERA : READY",
+    "KAMERA : GOTOWA"
+  ],
+  "CAMERA : READY · EVENT PHOTO SAVED": [
+    "카메라 : 준비 완료 · 사진 저장됨",
+    "CAMERA : READY · EVENT PHOTO SAVED",
+    "KAMERA : GOTOWA · ZDJĘCIE ZAPISANE"
+  ],
+  "CAMERA : NOT READY · EVENT WITHOUT PHOTO": [
+    "카메라 준비 안 됨 · 사진 없이 기록",
+    "CAMERA : NOT READY · EVENT WITHOUT PHOTO",
+    "KAMERA NIEGOTOWA · ZDARZENIE BEZ ZDJĘCIA"
+  ],
+  "CAMERA : PERMISSION REQUIRED": [
+    "카메라 : 권한 필요",
+    "CAMERA : PERMISSION REQUIRED",
+    "KAMERA : WYMAGANE UPRAWNIENIE"
+  ],
+  "CAMERA : NOT FOUND": [
+    "카메라 없음",
+    "CAMERA : NOT FOUND",
+    "NIE ZNALEZIONO KAMERY"
+  ],
+  "CAMERA : ERROR": [
+    "카메라 오류",
+    "CAMERA : ERROR",
+    "BŁĄD KAMERY"
+  ],
+  "SMART SPLIT 0.6s · PRE 3s + IMPACT CORE + POST 3s · PHOTO · GRAPH · CSV": [
+    "충격 분리 0.6초 · 전 3초 + 충격 + 후 3초 · 사진 · 그래프 · CSV",
+    "SMART SPLIT 0.6s · PRE 3s + IMPACT + POST 3s · PHOTO · GRAPH · CSV",
+    "PODZIAŁ 0.6s · 3s PRZED + WSTRZĄS + 3s PO · ZDJĘCIE · WYKRES · CSV"
+  ],
+  "Equip.": [
+    "호기",
+    "Equipment",
+    "Nr maszyny"
+  ],
+  "MODE": [
+    "모드",
+    "MODE",
+    "TRYB"
+  ],
+  "IMPACT": [
+    "충격 횟수",
+    "IMPACTS",
+    "WSTRZĄSY"
+  ],
+  "PEAK\n%.3f": [
+    "최대값\n%.3f",
+    "PEAK\n%.3f",
+    "MAKS.\n%.3f"
+  ],
+  "PEAK\n0.000": [
+    "최대값\n0.000",
+    "PEAK\n0.000",
+    "MAKS.\n0.000"
+  ],
+  "IMPACT\n%d": [
+    "충격 횟수\n%d",
+    "IMPACTS\n%d",
+    "WSTRZĄSY\n%d"
+  ],
+  "IMPACT\n0": [
+    "충격 횟수\n0",
+    "IMPACTS\n0",
+    "WSTRZĄSY\n0"
+  ],
+  "MAIN DIRECTION : %s AXIS": [
+    "주 진동 방향 : %s축",
+    "MAIN DIRECTION : %s AXIS",
+    "GŁÓWNY KIERUNEK : OŚ %s"
+  ],
+  "MAIN DIRECTION : -": [
+    "주 진동 방향 : -",
+    "MAIN DIRECTION : -",
+    "GŁÓWNY KIERUNEK : -"
+  ],
+  "GRAPH\nSCALE": [
+    "그래프\n범위",
+    "GRAPH\nSCALE",
+    "SKALA\nWYKRESU"
+  ],
+  "AUTO": [
+    "자동",
+    "AUTO",
+    "AUTO"
+  ],
+  "REMOTE ON": [
+    "원격 연결 중",
+    "REMOTE ON",
+    "POŁĄCZONO"
+  ],
+  "MCSC UNIT COUNT : %d · TOTAL %.1fs · STEP 0.1s": [
+    "MCSC 유닛 %d개 · 합계 %.1f초 · 단위 0.1초",
+    "MCSC UNITS : %d · TOTAL %.1fs · STEP 0.1s",
+    "MODUŁY MCSC : %d · SUMA %.1fs · KROK 0.1s"
+  ],
+  "- UNIT": [
+    "- 유닛",
+    "- UNIT",
+    "- MODUŁ"
+  ],
+  "+ UNIT": [
+    "+ 유닛",
+    "+ UNIT",
+    "+ MODUŁ"
+  ],
+  "RESET 10": [
+    "10개로 초기화",
+    "RESET TO 10",
+    "PRZYWRÓĆ 10"
+  ],
+  "● SENSOR CALIBRATION": [
+    "● 센서 안정화 중",
+    "● SENSOR STABILIZATION",
+    "● STABILIZACJA CZUJNIKA"
+  ],
+  "CALIBRATING %.1fs": [
+    "센서 안정화 %.1f초",
+    "STABILIZING %.1fs",
+    "STABILIZACJA %.1fs"
+  ],
+  "OVER MCSC +%.1fs": [
+    "MCSC 초과 +%.1f초",
+    "OVER MCSC +%.1fs",
+    "POZA MCSC +%.1fs"
+  ],
+  "OVER +%.1fs": [
+    "초과 +%.1f초",
+    "OVER +%.1fs",
+    "POZA +%.1fs"
+  ],
+  "REAL %02d:%02d · PROCESS %s\n%s %s": [
+    "실제 %02d:%02d · 공정 %s\n%s %s",
+    "REAL %02d:%02d · PROCESS %s\n%s %s",
+    "CZAS %02d:%02d · PROCES %s\n%s %s"
+  ],
+  "· AUTO HOLD": [
+    "· 자동시간정지",
+    "· AUTO HOLD",
+    "· AUTO PAUZA"
+  ],
+  "· CORR ON": [
+    "· 자동보정 켬",
+    "· CORRECTION ON",
+    "· KOREKTA WŁ."
+  ],
+  "· CORR OFF": [
+    "· 자동보정 끔",
+    "· CORRECTION OFF",
+    "· KOREKTA WYŁ."
+  ],
+  "UNIT SEGMENT · %s > %s\n%02d:%02d · Peak %.3f · RMS %.3f · Impact %d": [
+    "유닛 구간 · %s > %s\n%02d:%02d · 최대 %.3f · RMS %.3f · 충격 %d",
+    "UNIT SEGMENT · %s > %s\n%02d:%02d · Peak %.3f · RMS %.3f · Impacts %d",
+    "SEGMENT · %s > %s\n%02d:%02d · Maks. %.3f · RMS %.3f · Wstrząsy %d"
+  ],
+  "TOP PRODUCTION IMPACT #%03d\n%s > %s\nPEAK %.3f m/s² · %s AXIS": [
+    "최대 생산 충격 #%03d\n%s > %s\n최대 %.3f m/s² · %s축",
+    "TOP PRODUCTION IMPACT #%03d\n%s > %s\nPEAK %.3f m/s² · %s AXIS",
+    "NAJWIĘKSZY WSTRZĄS #%03d\n%s > %s\nMAKS. %.3f m/s² · OŚ %s"
+  ],
+  "APPLY & RECALCULATE": [
+    "적용 · 재계산",
+    "APPLY & RECALCULATE",
+    "ZASTOSUJ I PRZELICZ"
+  ],
+  "REMOTE MONITOR · LIVE": [
+    "원격 모니터 · 실시간",
+    "REMOTE MONITOR · LIVE",
+    "MONITOR ZDALNY · NA ŻYWO"
+  ],
+  "COPY URL": [
+    "주소 복사",
+    "COPY URL",
+    "KOPIUJ ADRES"
+  ],
+  "STOP REMOTE": [
+    "원격 연결 종료",
+    "STOP REMOTE",
+    "ZAKOŃCZ POŁĄCZENIE"
+  ],
+  "CONNECTION LOST": [
+    "연결 끊김",
+    "CONNECTION LOST",
+    "BRAK POŁĄCZENIA"
+  ],
+  "측정 진단": [
+    "측정 진단",
+    "DIAGNOSTICS",
+    "DIAGNOSTYKA"
+  ],
+  "새로고침": [
+    "새로고침",
+    "Refresh",
+    "Odśwież"
+  ],
+  "수신 중": [
+    "수신 중",
+    "Receiving samples",
+    "Odbieranie próbek"
+  ],
+  "새 센서 데이터 없음": [
+    "새 센서 데이터 없음",
+    "No fresh sensor data",
+    "Brak nowych danych czujnika"
+  ],
+  "측정 종료": [
+    "측정 종료",
+    "Measurement stopped",
+    "Pomiar zakończony"
+  ],
+  "측정 대기": [
+    "측정 대기",
+    "Waiting for measurement",
+    "Oczekiwanie na pomiar"
+  ],
+  "실측 샘플링: %.1f Hz\n샘플 수: %d\n센서 기록 길이: %.3f s\n최근 샘플: %s\n최소 간격: %.3f ms\n최대 간격: %.3f ms\n전달 지연: %.3f ms\n배터리: %d%%\n여유 공간: %.2f GB": [
+    "실측 샘플링: %.1f Hz\n샘플 수: %d\n센서 기록 길이: %.3f s\n최근 샘플: %s\n최소 간격: %.3f ms\n최대 간격: %.3f ms\n전달 지연: %.3f ms\n배터리: %d%%\n여유 공간: %.2f GB",
+    "Measured sampling: %.1f Hz\nSamples: %d\nSensor duration: %.3f s\nLast sample: %s\nMinimum interval: %.3f ms\nMaximum interval: %.3f ms\nDelivery delay: %.3f ms\nBattery: %d%%\nFree storage: %.2f GB",
+    "Rzeczywiste próbkowanie: %.1f Hz\nPróbki: %d\nCzas danych: %.3f s\nOstatnia próbka: %s\nMin. odstęp: %.3f ms\nMaks. odstęp: %.3f ms\nOpóźnienie: %.3f ms\nBateria: %d%%\nWolna pamięć: %.2f GB"
+  ],
+  "설정된 주기가 아니라 실제 센서 타임스탬프 기준입니다. 큰 간격은 수신 공백의 신호이며 실제 누락 개수를 확정하지는 않습니다.": [
+    "설정된 주기가 아니라 실제 센서 타임스탬프 기준입니다. 큰 간격은 수신 공백의 신호이며 실제 누락 개수를 확정하지는 않습니다.",
+    "Based on actual sensor timestamps, not the requested rate. Large intervals indicate a data gap; they do not establish the number of missing samples.",
+    "Dane na podstawie znaczników czasu czujnika, nie zadanej częstotliwości. Duże odstępy wskazują przerwę, lecz nie określają liczby utraconych próbek."
+  ],
+  "원격 측정 조작 허용": [
+    "원격 측정 조작 허용",
+    "Allow remote measurement control",
+    "Zezwól na zdalne sterowanie pomiarem"
+  ],
+  "원격 조작은 측정 앱만 제어합니다. 설비의 동작이나 비상정지는 제어하지 않습니다.": [
+    "원격 조작은 측정 앱만 제어합니다. 설비의 동작이나 비상정지는 제어하지 않습니다.",
+    "Remote commands control this measurement app only, not the equipment or its emergency stop.",
+    "Polecenia zdalne sterują wyłącznie aplikacją pomiarową, nie maszyną ani jej zatrzymaniem awaryjnym."
+  ],
+  "접속 주소를 찾지 못했습니다. 같은 Wi-Fi 또는 핫스팟에 연결하세요.": [
+    "접속 주소를 찾지 못했습니다. 같은 Wi-Fi 또는 핫스팟에 연결하세요.",
+    "No local address found. Connect to the same Wi-Fi or hotspot.",
+    "Brak adresu lokalnego. Połącz z tą samą siecią Wi-Fi lub hotspotem."
+  ],
+  "조작 PIN": [
+    "조작 PIN",
+    "Control PIN",
+    "PIN sterowania"
+  ],
+  "허용된 사내망 또는 전용 핫스팟에서만 사용하세요. 이 로컬 연결은 HTTP이며 암호화되지 않습니다.": [
+    "허용된 사내망 또는 전용 핫스팟에서만 사용하세요. 이 로컬 연결은 HTTP이며 암호화되지 않습니다.",
+    "Use only an approved private network or dedicated hotspot. This local HTTP connection is not encrypted.",
+    "Używaj tylko zatwierdzonej sieci prywatnej lub dedykowanego hotspotu. Lokalne połączenie HTTP nie jest szyfrowane."
+  ],
+  "이벤트 : ": [
+    "이벤트 : ",
+    "Events : ",
+    "Zdarzenia : "
+  ],
+  "이벤트 : %d회": [
+    "이벤트 : %d회",
+    "Events : %d",
+    "Zdarzenia : %d"
+  ],
+  "예: 2.0": [
+    "예: 2.0",
+    "e.g. 2.0",
+    "np. 2.0"
+  ],
+  "예: name@gmail.com": [
+    "예: name@gmail.com",
+    "e.g. name@gmail.com",
+    "np. name@gmail.com"
+  ],
+  "FORMATTING_FAILED": [
+    "표시 오류",
+    "Display error",
+    "Błąd wyświetlania"
+  ],
+  "LINE STOP": [
+    "라인 정지 추정",
+    "LINE STOP",
+    "POSTÓJ LINII"
+  ],
+  "AUTO STOP": [
+    "자동 정지 추정",
+    "AUTO STOP",
+    "AUTO POSTÓJ"
+  ],
+  "AUTO RESUME": [
+    "자동 재가동 추정",
+    "AUTO RESUME",
+    "AUTO WZNOWIENIE"
+  ],
+  "AFTER MCSC": [
+    "MCSC 이후",
+    "AFTER MCSC",
+    "PO MCSC"
+  ],
+  "STOP_CANDIDATE": [
+    "정지 후보",
+    "STOP CANDIDATE",
+    "MOŻLIWY POSTÓJ"
+  ],
+  "RUNNING": [
+    "진행 중",
+    "RUNNING",
+    "W TOKU"
+  ],
+  "STOPPED": [
+    "측정 종료",
+    "STOPPED",
+    "ZATRZYMANO"
+  ],
+  "CALIBRATING": [
+    "센서 안정화",
+    "STABILIZING",
+    "STABILIZACJA"
+  ],
+  "READY": [
+    "준비 완료",
+    "READY",
+    "GOTOWY"
+  ],
+  "ACCEPTED": [
+    "수신됨",
+    "ACCEPTED",
+    "ODEBRANO"
+  ],
+  "STARTED": [
+    "시작됨",
+    "STARTED",
+    "URUCHOMIONO"
+  ],
+  "PAUSED": [
+    "시간정지됨",
+    "PAUSED",
+    "WSTRZYMANO CZAS"
+  ],
+  "RESUMED": [
+    "시간 재개됨",
+    "RESUMED",
+    "WZNOWIONO CZAS"
+  ],
+  "CONTROL DISABLED": [
+    "측정폰에서 조작 허용을 켜주세요",
+    "Enable control on the measurement phone",
+    "Włącz sterowanie w telefonie pomiarowym"
+  ],
+  "Wrong control PIN": [
+    "조작 PIN이 다릅니다",
+    "Wrong control PIN",
+    "Nieprawidłowy PIN"
+  ],
+  "ALREADY RUNNING": [
+    "이미 측정 중",
+    "ALREADY RUNNING",
+    "POMIAR JUŻ TRWA"
+  ],
+  "ALREADY STOPPED": [
+    "이미 측정 종료",
+    "ALREADY STOPPED",
+    "POMIAR JUŻ ZAKOŃCZONY"
+  ],
+  "ALREADY PAUSED": [
+    "이미 시간정지됨",
+    "ALREADY PAUSED",
+    "CZAS JUŻ WSTRZYMANY"
+  ],
+  "STALE SESSION": [
+    "다른 측정이 시작되었습니다. 화면을 새로고침하세요",
+    "A different measurement started. Refresh the page.",
+    "Rozpoczęto inny pomiar. Odśwież stronę."
+  ],
+  "START FAILED": [
+    "측정 시작 실패",
+    "START FAILED",
+    "NIE UDAŁO SIĘ ROZPOCZĄĆ"
+  ],
+  "PAUSE NOT AVAILABLE": [
+    "자동 시간구간 측정 중에만 시간정지 가능",
+    "Pause requires a running auto-timeline measurement",
+    "Pauza wymaga aktywnego pomiaru z automatyczną osią czasu"
+  ],
+  "RESUME NOT AVAILABLE": [
+    "재개 가능한 자동 시간구간 측정 없음",
+    "No paused auto-timeline measurement to resume",
+    "Brak pomiaru z osią czasu do wznowienia"
+  ],
+  "APP BUSY - NOT EXECUTED": [
+    "앱이 바빠 실행하지 않았습니다",
+    "APP BUSY - NOT EXECUTED",
+    "APLIKACJA ZAJĘTA - NIE WYKONANO"
+  ],
+  "Result unknown - check current state; command will not be resent automatically.": [
+    "결과를 확인하지 못했습니다. 현재 상태를 확인하세요. 명령은 자동 재전송하지 않습니다.",
+    "Result unknown - check current state; command will not be resent automatically.",
+    "Nieznany wynik. Sprawdź stan. Polecenie nie zostanie automatycznie ponowione."
+  ],
+  "ONLY APP MEASUREMENT - NOT MACHINE CONTROL": [
+    "측정 앱만 조작 · 설비 동작 제어 아님",
+    "ONLY APP MEASUREMENT - NOT MACHINE CONTROL",
+    "TYLKO APLIKACJA POMIAROWA - NIE MASZYNA"
+  ],
+  "LANGUAGE": [
+    "언어",
+    "LANGUAGE",
+    "JĘZYK"
+  ],
+  "CONTROL LOCKED": [
+    "원격 조작 잠김",
+    "CONTROL LOCKED",
+    "STEROWANIE ZABLOKOWANE"
+  ],
+  "SENSOR DATA STALE": [
+    "센서 데이터 갱신 지연",
+    "SENSOR DATA STALE",
+    "NIEAKTUALNE DANE CZUJNIKA"
+  ],
+  "NEW MEASUREMENT": [
+    "새 측정",
+    "NEW MEASUREMENT",
+    "NOWY POMIAR"
+  ],
+  "Start a new measurement? Keep the phone still for sensor stabilization.": [
+    "새 측정을 시작할까요? 센서 안정화 동안 폰을 움직이지 마세요.",
+    "Start a new measurement? Keep the phone still for sensor stabilization.",
+    "Rozpocząć nowy pomiar? Nie poruszaj telefonem podczas stabilizacji czujnika."
+  ],
+  "COMMAND RESULT": [
+    "명령 처리 결과",
+    "COMMAND RESULT",
+    "WYNIK POLECENIA"
+  ],
+  "Session RMS  %.3f m/s²\n": [
+    "전체 RMS  %.3f m/s²\n",
+    "Session RMS  %.3f m/s²\n",
+    "RMS pomiaru  %.3f m/s²\n"
+  ],
+  "Timeline Correction  %s · %d회 · %.1fs": [
+    "시간 보정  %s · %d회 · %.1f초",
+    "Timeline correction  %s · %d times · %.1fs",
+    "Korekta czasu  %s · %d razy · %.1fs"
+  ],
+  "%s   MCSC %s   ACTIVE %.1fs": [
+    "%s   MCSC %s   유효 구간 %.1f초",
+    "%s   MCSC %s   ACTIVE %.1fs",
+    "%s   MCSC %s   CZAS %.1fs"
+  ],
+  "AVG %.3f   MIN %.3f   MAX %.3f   RMS %.3f   IMP %d   SMP %d": [
+    "평균 %.3f   최소 %.3f   최대 %.3f   RMS %.3f   충격 %d   샘플 %d",
+    "AVG %.3f   MIN %.3f   MAX %.3f   RMS %.3f   IMP %d   SMP %d",
+    "ŚR. %.3f   MIN %.3f   MAKS. %.3f   RMS %.3f   WSTRZ. %d   PRÓBKI %d"
+  ],
+  "이벤트 : 0회": [
+    "이벤트 : 0회",
+    "Events : 0",
+    "Zdarzenia : 0"
+  ],
+  "최근 3초 데이터 대기 중": [
+    "최근 3초 데이터 대기 중",
+    "Waiting for 3 seconds of data",
+    "Oczekiwanie na ostatnie 3 s danych"
+  ],
+  "회": [
+    "회",
+    " events",
+    " razy"
+  ],
+  "초과 후 3초 데이터 기록 중...": [
+    "초과 후 3초 데이터 기록 중...",
+    "Recording 3 seconds after the exceedance...",
+    "Zapisywanie 3 s danych po przekroczeniu..."
+  ],
+  "최근 이벤트 데이터 : ": [
+    "최근 이벤트 데이터 : ",
+    "Latest event samples : ",
+    "Dane ostatniego zdarzenia : "
+  ],
+  "🚨 Vibration SPEC 초과 알람": [
+    "🚨 Vibration SPEC 초과 알람",
+    "🚨 Vibration SPEC alert",
+    "🚨 Alarm przekroczenia SPEC drgań"
+  ],
+  "SPEC 초과량 : %.3f m/s²": [
+    "SPEC 초과량 : %.3f m/s²",
+    "SPEC exceedance : %.3f m/s²",
+    "Przekroczenie SPEC : %.3f m/s²"
+  ],
+  "SPEC : %.2f m/s²": [
+    "SPEC : %.2f m/s²",
+    "SPEC : %.2f m/s²",
+    "SPEC : %.2f m/s²"
+  ],
+  "저장된 CSV 이벤트가 없습니다.": [
+    "저장된 CSV 이벤트가 없습니다.",
+    "No saved CSV events.",
+    "Brak zapisanych zdarzeń CSV."
+  ],
+  "최근 이벤트": [
+    "최근 이벤트",
+    "Recent events",
+    "Ostatnie zdarzenia"
+  ],
+  "SPEC %.2f   초과 +%.3f m/s²": [
+    "SPEC %.2f   초과 +%.3f m/s²",
+    "SPEC %.2f   exceeded by +%.3f m/s²",
+    "SPEC %.2f   przekroczenie +%.3f m/s²"
+  ],
+  "데이터 %,d개": [
+    "데이터 %,d개",
+    "Samples: %,d",
+    "Dane: %,d"
+  ],
+  "GPS 위치 : %.6f, %.6f": [
+    "GPS 위치 : %.6f, %.6f",
+    "GPS location : %.6f, %.6f",
+    "Pozycja GPS : %.6f, %.6f"
+  ],
+  "GPS 위치 : 기록 없음": [
+    "GPS 위치 : 기록 없음",
+    "GPS location : no record",
+    "Pozycja GPS : brak zapisu"
+  ],
+  "LGES WA5 이벤트 위치": [
+    "LGES WA5 이벤트 위치",
+    "LGES WA5 event location",
+    "Lokalizacja zdarzenia LGES WA5"
+  ],
+  "이벤트 자동 촬영 사진": [
+    "이벤트 자동 촬영 사진",
+    "Automatic event photo",
+    "Automatyczne zdjęcie zdarzenia"
+  ],
+  "조회 기간 : ": [
+    "조회 기간 : ",
+    "Period : ",
+    "Okres : "
+  ],
+  "해당 기간에 저장된 이벤트가 없습니다.": [
+    "해당 기간에 저장된 이벤트가 없습니다.",
+    "No saved events for this period.",
+    "Brak zapisanych zdarzeń w tym okresie."
+  ],
+  "날짜별 MAX / AVG Trend": [
+    "날짜별 MAX / AVG Trend",
+    "Daily MAX / AVG trend",
+    "Trend MAX / AVG wg daty"
+  ],
+  "날짜별 요약": [
+    "날짜별 요약",
+    "Daily summary",
+    "Podsumowanie wg daty"
+  ],
+  "MAX %.3f   AVG %.3f   초과 %d/%d건": [
+    "MAX %.3f   AVG %.3f   초과 %d/%d건",
+    "MAX %.3f   AVG %.3f   exceeded %d/%d",
+    "MAX %.3f   AVG %.3f   ponad SPEC %d/%d"
+  ],
+  "PROCESS SHOCK": [
+    "공정 충격",
+    "PROCESS SHOCK",
+    "ANALIZA WSTRZĄSÓW"
+  ],
+  "PROFILER": [
+    "분석",
+    "PROFILER",
+    "PROCESU"
+  ],
+  "LAST IMPACT : -": [
+    "LAST IMPACT : -",
+    "LAST IMPACT : -",
+    "OSTATNIE UDERZENIE : -"
+  ],
+  "이벤트 발생 시 사진 · 전후 트렌드 · CSV · 요약을 자동 저장합니다.": [
+    "이벤트 발생 시 사진 · 전후 트렌드 · CSV · 요약을 자동 저장합니다.",
+    "Photos, pre/post trends, CSV and summaries are saved automatically on an event.",
+    "Po zdarzeniu automatycznie zapisywane są zdjęcie, trend, CSV i podsumowanie."
+  ],
+  "ENGINEER MCSC · 0.1초 단위 설정": [
+    "ENGINEER MCSC · 0.1초 단위 설정",
+    "ENGINEER MCSC · 0.1-second increments",
+    "MCSC DLA INŻYNIERA · krok 0,1 s"
+  ],
+  "한 줄에 Unit 이름, 기준시간(초)": [
+    "한 줄에 Unit 이름, 기준시간(초)",
+    "One unit name and duration (seconds) per line",
+    "W każdym wierszu: nazwa modułu, czas bazowy (s)"
+  ],
+  "설비가 멈추면 PROCESS PAUSE를 누르면": [
+    "설비가 멈추면 PROCESS PAUSE를 누르면",
+    "When the equipment stops, press PROCESS PAUSE.",
+    "Gdy urządzenie się zatrzyma, naciśnij PROCESS PAUSE"
+  ],
+  "측정 중 공정/UNIT을 변경하면 구간별 Peak/RMS/Impact를 자동 비교합니다.": [
+    "측정 중 공정/UNIT을 변경하면 구간별 Peak/RMS/Impact를 자동 비교합니다.",
+    "Changing the process/unit divides measurements into sections for Peak/RMS/Impact comparison.",
+    "Zmiana procesu/modułu podczas pomiaru automatycznie porównuje Peak/RMS/Impact."
+  ],
+  "LAST IMPACT #%03d · %s > %s": [
+    "LAST IMPACT #%03d · %s > %s",
+    "LAST IMPACT #%03d · %s > %s",
+    "OSTATNIE UDERZENIE #%03d · %s > %s"
+  ],
+  "PEAK %.3f | RMS %.3f | %.2fs | %s AXIS": [
+    "PEAK %.3f | RMS %.3f | %.2fs | %s AXIS",
+    "PEAK %.3f | RMS %.3f | %.2fs | %s AXIS",
+    "PEAK %.3f | RMS %.3f | %.2fs | OŚ %s"
+  ],
+  "사진 · 그래프 · CSV · 요약 저장 중...": [
+    "사진 · 그래프 · CSV · 요약 저장 중...",
+    "Saving photo, graph, CSV and summary...",
+    "Zapisywanie zdjęcia, wykresu, CSV i podsumowania..."
+  ],
+  "Telegram : 설정 없음 · Local 저장 완료": [
+    "Telegram : 설정 없음 · Local 저장 완료",
+    "Telegram : not configured · saved locally",
+    "Telegram : brak konfiguracji · zapis lokalny zakończony"
+  ],
+  "다운로드 완료": [
+    "다운로드 완료",
+    "Download complete",
+    "Pobieranie zakończone"
+  ],
+  "Download/VibrationMonitor/": [
+    "Download/VibrationMonitor/",
+    "Download/VibrationMonitor/",
+    "Download/VibrationMonitor/"
+  ],
+  "측정시간  %02d:%02d:%02d": [
+    "측정시간  %02d:%02d:%02d",
+    "Measurement time  %02d:%02d:%02d",
+    "Czas pomiaru  %02d:%02d:%02d"
+  ],
+  "Impact  %d회 · Production %d · Stop/Resume %d": [
+    "Impact  %d회 · Production %d · Stop/Resume %d",
+    "Impact  %d · Production %d · Stop/Resume %d",
+    "Impact  %d · Produkcja %d · Stop/Resume %d"
+  ],
+  "최대 Peak  %.3f m/s²": [
+    "최대 Peak  %.3f m/s²",
+    "Maximum peak  %.3f m/s²",
+    "Maks. Peak  %.3f m/s²"
+  ],
+  "주 충격 방향  %s AXIS": [
+    "주 충격 방향  %s AXIS",
+    "Main impact direction  %s AXIS",
+    "Główny kierunek uderzenia  OŚ %s"
+  ],
+  "Remote Monitor 서버를 시작하지 못했습니다.": [
+    "Remote Monitor 서버를 시작하지 못했습니다.",
+    "Could not start the remote monitor server.",
+    "Nie udało się uruchomić serwera zdalnego monitoringu."
+  ],
+  "READ ONLY · 같은 Wi-Fi 또는 Hotspot에서 사용": [
+    "READ ONLY · 같은 Wi-Fi 또는 Hotspot에서 사용",
+    "VIEWER · use the same Wi-Fi or hotspot",
+    "PODGLĄD / STEROWANIE · użyj tej samej sieci Wi-Fi lub Hotspot"
+  ],
+  "IP 주소를 찾지 못했습니다.": [
+    "IP 주소를 찾지 못했습니다.",
+    "No local IP address found.",
+    "Nie znaleziono adresu IP."
+  ],
+  "다른 폰의 Chrome/Samsung Internet에서 아래 주소를 여세요.": [
+    "다른 폰의 Chrome/Samsung Internet에서 아래 주소를 여세요.",
+    "Open the address below in Safari/Chrome on the other phone.",
+    "Na drugim telefonie otwórz poniższy adres w Chrome/Safari."
+  ],
+  "START / PAUSE / RESUME / STOP 원격조작 가능": [
+    "START / PAUSE / RESUME / STOP 원격조작 가능",
+    "Remote START / PAUSE / RESUME / STOP available",
+    "Dostępne sterowanie zdalne: START / PAUSE / RESUME / STOP"
+  ],
+  "%.3f": [
+    "%.3f",
+    "%.3f",
+    "%.3f"
+  ],
+  "0.000": [
+    "0.000",
+    "0.000",
+    "0.000"
+  ],
+  "%d": [
+    "%d",
+    "%d",
+    "%d"
+  ],
+  "0": [
+    "0",
+    "0",
+    "0"
+  ],
+  "GRAPH": [
+    "그래프",
+    "GRAPH",
+    "SKALA"
+  ],
+  "SCALE": [
+    "범위",
+    "SCALE",
+    "WYKRESU"
+  ],
+  "REAL %02d:%02d · PROCESS %s": [
+    "실제 %02d:%02d · 공정 %s",
+    "REAL %02d:%02d · PROCESS %s",
+    "CZAS %02d:%02d · PROCES %s"
+  ],
+  "%s %s": [
+    "%s %s",
+    "%s %s",
+    "%s %s"
+  ],
+  "UNIT SEGMENT · %s > %s": [
+    "유닛 구간 · %s > %s",
+    "UNIT SEGMENT · %s > %s",
+    "SEGMENT · %s > %s"
+  ],
+  "%02d:%02d · Peak %.3f · RMS %.3f · Impact %d": [
+    "%02d:%02d · 최대 %.3f · RMS %.3f · 충격 %d",
+    "%02d:%02d · Peak %.3f · RMS %.3f · Impacts %d",
+    "%02d:%02d · Maks. %.3f · RMS %.3f · Wstrząsy %d"
+  ],
+  "TOP PRODUCTION IMPACT #%03d": [
+    "최대 생산 충격 #%03d",
+    "TOP PRODUCTION IMPACT #%03d",
+    "NAJWIĘKSZY WSTRZĄS #%03d"
+  ],
+  "%s > %s": [
+    "%s > %s",
+    "%s > %s",
+    "%s > %s"
+  ],
+  "PEAK %.3f m/s² · %s AXIS": [
+    "최대 %.3f m/s² · %s축",
+    "PEAK %.3f m/s² · %s AXIS",
+    "MAKS. %.3f m/s² · OŚ %s"
+  ],
+  "실측 샘플링: %.1f Hz": [
+    "실측 샘플링: %.1f Hz",
+    "Measured sampling: %.1f Hz",
+    "Rzeczywiste próbkowanie: %.1f Hz"
+  ],
+  "샘플 수: %d": [
+    "샘플 수: %d",
+    "Samples: %d",
+    "Próbki: %d"
+  ],
+  "센서 기록 길이: %.3f s": [
+    "센서 기록 길이: %.3f s",
+    "Sensor duration: %.3f s",
+    "Czas danych: %.3f s"
+  ],
+  "최근 샘플: %s": [
+    "최근 샘플: %s",
+    "Last sample: %s",
+    "Ostatnia próbka: %s"
+  ],
+  "최소 간격: %.3f ms": [
+    "최소 간격: %.3f ms",
+    "Minimum interval: %.3f ms",
+    "Min. odstęp: %.3f ms"
+  ],
+  "최대 간격: %.3f ms": [
+    "최대 간격: %.3f ms",
+    "Maximum interval: %.3f ms",
+    "Maks. odstęp: %.3f ms"
+  ],
+  "전달 지연: %.3f ms": [
+    "전달 지연: %.3f ms",
+    "Delivery delay: %.3f ms",
+    "Opóźnienie: %.3f ms"
+  ],
+  "배터리: %d%%": [
+    "배터리: %d%%",
+    "Battery: %d%%",
+    "Bateria: %d%%"
+  ],
+  "여유 공간: %.2f GB": [
+    "여유 공간: %.2f GB",
+    "Free storage: %.2f GB",
+    "Wolna pamięć: %.2f GB"
+  ],
+  "Session RMS  %.3f m/s²": [
+    "전체 RMS  %.3f m/s²",
+    "Session RMS  %.3f m/s²",
+    "RMS pomiaru  %.3f m/s²"
+  ]
+}

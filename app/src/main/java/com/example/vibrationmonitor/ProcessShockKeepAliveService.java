@@ -7,17 +7,18 @@ public class ProcessShockKeepAliveService extends android.app.Service {
 
     @Override
     public void onCreate() {
+        AppLanguage.init(this);
         super.onCreate();
 
         if (android.os.Build.VERSION.SDK_INT >= 26) {
             android.app.NotificationChannel channel =
                     new android.app.NotificationChannel(
                             CHANNEL_ID,
-                            "Process Shock Monitoring",
+                            AppLanguage.text("Process Shock Monitoring"),
                             android.app.NotificationManager.IMPORTANCE_LOW
                     );
 
-            channel.setDescription("Keeps continuous equipment impact monitoring active.");
+            channel.setDescription(AppLanguage.text("Keeps continuous equipment impact monitoring active."));
 
             android.app.NotificationManager nm =
                     (android.app.NotificationManager)
@@ -66,8 +67,8 @@ public class ProcessShockKeepAliveService extends android.app.Service {
         }
 
         return b
-                .setContentTitle("Process Shock Monitoring")
-                .setContentText("연속 충격 측정이 진행 중입니다.")
+                .setContentTitle(AppLanguage.text("Process Shock Monitoring"))
+                .setContentText(AppLanguage.text("연속 충격 측정이 진행 중입니다."))
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setOngoing(true)
                 .setContentIntent(pi)

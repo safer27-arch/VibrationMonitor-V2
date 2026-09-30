@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Unified Android APK
 
 on:
   push:
@@ -93,8 +93,8 @@ jobs:
                   applicationId 'com.example.vibrationmonitor.v2'
                   minSdk 26
                   targetSdk 35
-                  versionCode 25
-                  versionName '4.4-REMOTE-CONTROL'
+                  versionCode 50
+                  versionName '5.0-UNIFIED-KO-EN-PL'
               }
 
               buildTypes {
@@ -106,6 +106,9 @@ jobs:
           EOF
 
 
+      - name: Check localization boundaries
+        run: python tools/verify_unified.py
+
       - name: Build APK
         env:
           VIBRATION_KEYSTORE_FILE: ${{ runner.temp }}/vibration-release.jks
@@ -113,8 +116,11 @@ jobs:
           VIBRATION_KEY_ALIAS: ${{ secrets.VIBRATION_KEY_ALIAS }}
         run: gradle :app:assembleDebug
 
+      - name: Name unified APK clearly
+        run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/VibrationMonitor_Unified_5.0.apk
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: VibrationMonitor-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: VibrationMonitor-Unified-KO-EN-PL
+          path: app/build/outputs/apk/debug/VibrationMonitor_Unified_5.0.apk

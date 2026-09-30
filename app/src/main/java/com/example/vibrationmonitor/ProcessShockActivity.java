@@ -9,7 +9,7 @@ import android.view.*;
 import android.widget.*;
 import java.util.*;
 
-public class ProcessShockActivity extends Activity implements SensorEventListener {
+public class ProcessShockActivity extends UnifiedActivity implements SensorEventListener {
 
     private SensorManager sm;
     private Sensor acc;
@@ -48,6 +48,13 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     private volatile String remoteMcscJson = "[]";
     private volatile String remoteLastImpact = "-";
     private volatile String remoteEventsJson = "[]";
+    // UNIFIED_V5_PRESENTATION_AND_DIAGNOSTICS
+    private volatile String remoteRunId = java.util.UUID.randomUUID().toString();
+    private volatile boolean remoteAutoMode = false;
+    private long remoteMetadataMs = 0;
+    private double[] remoteBucket = null;
+    @Override protected boolean measurementActive() { return running; }
+
     private volatile String remoteLastCommand = "-";
 
     private final ArrayList<RecipeUnit> recipe = new ArrayList<>();
@@ -165,7 +172,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     }
 
     private TextView tv(String text, float size, int color) {
-        TextView v = new TextView(this);
+        TextView v = new LocalizedTextView(this);
         v.setText(text);
         v.setTextSize(size);
         v.setTextColor(color);
@@ -174,7 +181,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     }
 
     private Button btn(String text, int color) {
-        Button b = new Button(this);
+        Button b = new LocalizedButton(this);
         b.setText(text);
         b.setTextColor(Color.WHITE);
         b.setTextSize(16);
@@ -184,8 +191,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     }
 
     private EditText input(String hint) {
-        EditText e = new EditText(this);
-        e.setHint(hint);
+        EditText e = new LocalizedEditText(this);
+        UiHints.set(e, hint);
         e.setTextSize(15);
         e.setSingleLine(true);
         e.setPadding(dp(10), dp(6), dp(10), dp(6));
@@ -276,7 +283,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         processLabel.setPadding(dp(4), dp(1), dp(4), 0);
         processCell.addView(processLabel);
         process = new Spinner(this);
-        process.setAdapter(new ArrayAdapter<String>(
+        process.setAdapter(new LocalizedArrayAdapter<String>(
                 this,
                 android.R.layout.simple_spinner_dropdown_item,
                 new String[]{"STACK", "PACKAGE", "FORMATION"}
@@ -301,7 +308,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         modeRow.addView(modeLabel, new LinearLayout.LayoutParams(dp(48), dp(42)));
 
         mode = new Spinner(this);
-        mode.setAdapter(new ArrayAdapter<String>(
+        mode.setAdapter(new LocalizedArrayAdapter<String>(
                 this,
                 android.R.layout.simple_spinner_dropdown_item,
                 new String[]{"AUTO TIMELINE", "MANUAL UNIT"}
@@ -425,7 +432,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         rms = tv("RMS\n0.000", 16, Color.rgb(15, 38, 61));
         impact = tv("IMPACT\n0", 16, Color.rgb(15, 38, 61));
 
-        for (TextView v : new TextView[]{peak, rms, impact}) {
+        for (TextView v : new LocalizedTextView[]{peak, rms, impact}) {
             v.setGravity(Gravity.CENTER);
             v.setBackground(bg(Color.WHITE, 12));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(74), 1f);
@@ -450,7 +457,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         double[] scaleValues = {0.0, 2.0, 5.0, 10.0, 20.0};
 
         for (int i = 0; i < scaleNames.length; i++) {
-            Button sb = new Button(this);
+            Button sb = new LocalizedButton(this);
             sb.setText(scaleNames[i]);
             sb.setTextSize(10);
             sb.setAllCaps(false);
@@ -556,7 +563,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         String old = unit.getSelectedItem() == null ? "" : String.valueOf(unit.getSelectedItem());
 
-        unit.setAdapter(new ArrayAdapter<String>(
+        unit.setAdapter(new LocalizedArrayAdapter<String>(
                 this,
                 android.R.layout.simple_spinner_dropdown_item,
                 u[Math.max(0, Math.min(2, p))]
@@ -742,7 +749,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
     private void showRecipeDialog() {
         if (running) {
-            Toast.makeText(
+            LocalizedToast.makeText(
                     this,
                     "측정 중에는 MCSC를 변경할 수 없습니다.",
                     Toast.LENGTH_SHORT
@@ -750,7 +757,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             return;
         }
 
-        final EditText e = new EditText(this);
+        final EditText e = new LocalizedEditText(this);
         e.setText(recipeToText());
         e.setTextSize(14);
         e.setMinLines(10);
@@ -820,7 +827,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         plusUnit.setOnClickListener(v -> changeMcscCount(e, mcscCount, 1));
         reset10.setOnClickListener(v -> resetMcsc10(e, mcscCount));
 
-        CheckBox autoCorrCheck = new CheckBox(this);
+        CheckBox autoCorrCheck = new LocalizedCheckBox(this);
         autoCorrCheck.setText("AUTO STOP CORRECTION");
         autoCorrCheck.setTextSize(14);
         autoCorrCheck.setChecked(autoCorrectionEnabled);
@@ -844,7 +851,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         recipeDialogBox.addView(autoCorrCheck);
         recipeDialogBox.addView(autoCorrHelp);
 
-        new android.app.AlertDialog.Builder(this)
+        new LocalizedDialog(this)
                 .setTitle("MCSC · UNIT TIME MAP")
                 .setMessage(
                         "ENGINEER MCSC · 0.1초 단위 설정\n"
@@ -859,7 +866,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                             parseRecipe(e.getText().toString());
 
                     if (parsed.isEmpty()) {
-                        Toast.makeText(
+                        LocalizedToast.makeText(
                                 this,
                                 "MCSC 형식을 확인해주세요.",
                                 Toast.LENGTH_LONG
@@ -877,7 +884,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                             .putBoolean(recipeKey() + "_auto_corr", autoCorrectionEnabled)
                             .apply();
 
-                    Toast.makeText(
+                    LocalizedToast.makeText(
                             this,
                             "MCSC " + recipe.size() + "개 Unit 저장 완료",
                             Toast.LENGTH_SHORT
@@ -1044,7 +1051,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             status.setText("● MONITORING · AUTO TIMELINE · MANUAL OVERRIDE");
             status.setTextColor(Color.rgb(80, 220, 150));
         }
-    }
+            syncRemoteControlState();
+}
 
     private void resetAutoCorrectionCandidates() {
         autoStopCandidateStartMs = 0L;
@@ -1258,8 +1266,10 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     }
 
     private void startMon() {
+        if (running) return;
+
         if (acc == null) {
-            Toast.makeText(this, "가속도 센서가 없습니다.", Toast.LENGTH_LONG).show();
+            LocalizedToast.makeText(this, "가속도 센서가 없습니다.", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -1272,11 +1282,23 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             loadRecipeForProcess();
 
             if (recipe.isEmpty()) {
-                Toast.makeText(this, "AUTO TIMELINE MCSC가 없습니다.", Toast.LENGTH_LONG).show();
+                LocalizedToast.makeText(this, "AUTO TIMELINE MCSC가 없습니다.", Toast.LENGTH_LONG).show();
                 return;
             }
         }
 
+        sensorHealth.reset();
+        remoteRunId = java.util.UUID.randomUUID().toString();
+        processPaused = false; processPauseStartMs = 0L; totalProcessPausedMs = 0L;
+        autoPauseActive = false; autoPausedTotalMs = 0L; autoCorrectionCount = 0;
+        autoStopCandidateStartMs = 0L; autoResumeCandidateStartMs = 0L;
+        autoCorrectionSuppressUntilMs = 0L;
+        calibrationSampleCount = 0L; calibrationSumSq = 0.0;
+        stoppedDurationSec = 0L; stoppedProcessDurationSec = 0L;
+        runStartWallMs = System.currentTimeMillis();
+        currentRunSummaryFile = null; currentUnitSummaryFile = null; currentImpactSummaryFile = null;
+        synchronized (remotePoints) { remotePoints.clear(); remoteBucket = null; }
+        remoteLastPointMs = 0L; remoteProcessSec = 0.0; remoteLastImpact = "-"; remoteEventsJson = "[]";
         running = true;
         calibrating = true;
         eventOn = false;
@@ -1341,12 +1363,16 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         sm.unregisterListener(this);
         sm.registerListener(this, acc, SensorManager.SENSOR_DELAY_GAME);
-    }
+            syncRemoteControlState();
+}
 
     private void stopMon() {
         if (!running) return;
 
         long stopNow = SystemClock.elapsedRealtime();
+        double exactRemoteEnd = startMs > 0L
+                ? (isAutoMode() ? getProcessElapsedMs(stopNow) / 1000.0 : (stopNow - startMs) / 1000.0)
+                : 0.0;
 
         stoppedDurationSec = startMs > 0L
                 ? Math.max(0L, (stopNow - startMs) / 1000L)
@@ -1383,7 +1409,9 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         remoteRunning = false;
         remoteCalibrating = false;
         remotePaused = false;
-        remoteProcessSec = stoppedProcessDurationSec;
+        remoteProcessSec = exactRemoteEnd;
+        remotePeak = sessionPeak; remoteRms = n > 0L ? Math.sqrt(sumSq / n) : 0.0;
+        synchronized (remotePoints) { if (remoteBucket != null) { remotePoints.addLast(remoteBucket); remoteBucket = null; } }
         remoteTimelineState = "STOPPED";
         refreshRemoteMetadata();
 
@@ -1402,6 +1430,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         pauseButton.setEnabled(false);
         pauseButton.setText("PAUSE");
 
+        exportHealth(eventDir(), remoteRunId);
         saveSessionCsv();
         saveUnitSummaryCsv();
         saveRunSummaryCsv();
@@ -1419,13 +1448,14 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 startService(i);
             }
         } catch (Exception e) {
-            Toast.makeText(this, "Background monitor 시작 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            LocalizedToast.makeText(this, "Background monitor 시작 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
     @Override
     public void onSensorChanged(SensorEvent e) {
         if (!running) return;
+        unifiedSensorSample(e.timestamp);
 
         long now = SystemClock.elapsedRealtime();
 
@@ -1445,9 +1475,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         float z = e.values[2] - gz;
         double t = Math.sqrt(x * x + y * y + z * z);
 
-        updateRemoteSnapshot(now, x, y, z, t);
-
         if (calibrating) {
+            updateRemoteSnapshot(now, x, y, z, t);
             calibrationSampleCount++;
             calibrationSumSq += t * t;
 
@@ -1475,6 +1504,10 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 );
 
                 calibrating = false;
+                sensorHealth.reset();
+                runStartWallMs = System.currentTimeMillis();
+                synchronized (remotePoints) { remotePoints.clear(); remoteBucket = null; }
+                remoteLastPointMs = 0L;
                 startMs = now;
                 n = 0L;
                 sessionPeak = 0.0;
@@ -1498,7 +1531,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 startUnitSegment(now);
                 openContinuousCsv();
 
-                Toast.makeText(this, "센서 안정화 완료 · 연속 공정 감시 시작", Toast.LENGTH_SHORT).show();
+                LocalizedToast.makeText(this, "센서 안정화 완료 · 연속 공정 감시 시작", Toast.LENGTH_SHORT).show();
             }
             return;
         }
@@ -1585,6 +1618,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             }
         }
 
+        updateRemoteSnapshot(now, x, y, z, t);
         graph.add(x, y, z, t, spec);
 
         if (startMs > 0L) {
@@ -1932,7 +1966,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         }
 
         runOnUiThread(() ->
-                Toast.makeText(this, "Impact #" + no + " 블랙박스 저장 완료", Toast.LENGTH_SHORT).show()
+                LocalizedToast.makeText(this, "Impact #" + no + " 블랙박스 저장 완료", Toast.LENGTH_SHORT).show()
         );
     }
 
@@ -2379,7 +2413,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
     private void showExportDialog() {
         if (running) {
-            Toast.makeText(
+            LocalizedToast.makeText(
                     this,
                     "측정을 종료한 뒤 DATA DOWNLOAD를 실행해주세요.",
                     Toast.LENGTH_LONG
@@ -2388,7 +2422,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         }
 
         if (continuousFile == null || !continuousFile.exists()) {
-            Toast.makeText(
+            LocalizedToast.makeText(
                     this,
                     "다운로드할 측정 데이터가 없습니다.",
                     Toast.LENGTH_SHORT
@@ -2430,7 +2464,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         scroll.addView(box);
 
         final android.app.AlertDialog dialog =
-                new android.app.AlertDialog.Builder(this)
+                new LocalizedDialog(this)
                         .setTitle("MEASUREMENT DATA DOWNLOAD")
                         .setView(scroll)
                         .setNegativeButton("취소", null)
@@ -2528,7 +2562,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             final boolean result = ok;
             final String name = savedName;
 
-            runOnUiThread(() -> Toast.makeText(
+            runOnUiThread(() -> LocalizedToast.makeText(
                     this,
                     result
                             ? "다운로드 완료\nDownload/VibrationMonitor/" + name
@@ -2566,6 +2600,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 zipAddFile(out, currentRunSummaryFile, "SUMMARY/RUN_SUMMARY.csv");
                 zipAddFile(out, currentUnitSummaryFile, "SUMMARY/UNIT_SUMMARY.csv");
                 zipAddFile(out, currentImpactSummaryFile, "SUMMARY/IMPACT_SUMMARY.csv");
+                zipAddFile(out, new java.io.File(eventDir(), "SENSOR_HEALTH_" + remoteRunId + ".csv"), "SUMMARY/SENSOR_HEALTH.csv");
+                zipAddFile(out, new java.io.File(eventDir(), "REMOTE_COMMAND_LOG_" + remoteRunId + ".csv"), "SUMMARY/REMOTE_COMMAND_LOG.csv");
             }
 
             for (EventRecord r : sessionEvents) {
@@ -3053,7 +3089,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
     private void showMcscReviewDialog() {
         if (running) {
-            Toast.makeText(
+            LocalizedToast.makeText(
                     this,
                     "측정 종료 후 MCSC Timeline Review를 실행해주세요.",
                     Toast.LENGTH_SHORT
@@ -3061,7 +3097,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             return;
         }
 
-        EditText editor = new EditText(this);
+        EditText editor = new LocalizedEditText(this);
         editor.setText(recipeToText());
         editor.setTextSize(14);
         editor.setGravity(Gravity.TOP | Gravity.START);
@@ -3124,7 +3160,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 )
         );
 
-        new android.app.AlertDialog.Builder(this)
+        new LocalizedDialog(this)
                 .setTitle("MCSC TIMELINE REVIEW")
                 .setView(box)
                 .setPositiveButton("APPLY & RECALCULATE", (d, w) -> {
@@ -3132,7 +3168,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                             parseRecipe(editor.getText().toString());
 
                     if (parsed.isEmpty()) {
-                        Toast.makeText(
+                        LocalizedToast.makeText(
                                 this,
                                 "MCSC 형식을 확인해주세요.",
                                 Toast.LENGTH_LONG
@@ -3155,7 +3191,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                     saveSessionCsv();
                     saveRunSummaryCsv();
 
-                    Toast.makeText(
+                    LocalizedToast.makeText(
                             this,
                             "MCSC Timeline 재계산 완료 · 원본 RAW/Blackbox 보존",
                             Toast.LENGTH_LONG
@@ -3468,7 +3504,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         sv.setFillViewport(false);
         sv.addView(box);
 
-        new android.app.AlertDialog.Builder(this)
+        new LocalizedDialog(this)
                 .setTitle("SESSION SUMMARY")
                 .setView(sv)
                 .setNeutralButton(
@@ -3485,7 +3521,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         );
 
         if (files == null || files.length == 0) {
-            new android.app.AlertDialog.Builder(this)
+            new LocalizedDialog(this)
                     .setTitle("IMPACT EVENT HISTORY")
                     .setMessage("저장된 충격 이벤트가 없습니다.")
                     .setPositiveButton("확인", null)
@@ -3503,7 +3539,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
         final java.io.File[] list = files;
 
-        new android.app.AlertDialog.Builder(this)
+        new LocalizedDialog(this)
                 .setTitle("IMPACT EVENT HISTORY")
                 .setItems(names, (dialog, which) -> showDetailedHistory(list[which]))
                 .setNegativeButton("닫기", null)
@@ -3580,7 +3616,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         ScrollView sv = new ScrollView(this);
         sv.addView(box);
 
-        new android.app.AlertDialog.Builder(this)
+        new LocalizedDialog(this)
                 .setTitle("IMPACT DETAIL")
                 .setView(sv)
                 .setPositiveButton("닫기", null)
@@ -3672,191 +3708,63 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         } catch (Exception ignored) {}
     }
 
-    private void updateRemoteSnapshot(
-            long now,
-            float x,
-            float y,
-            float z,
-            double t
-    ) {
-        remoteRunning = running;
-        remoteCalibrating = calibrating;
-        remotePaused = processPaused;
-        remoteX = x;
-        remoteY = y;
-        remoteZ = z;
-        remoteTotal = t;
-        remotePeak = sessionPeak;
-        remoteRms = n > 0L ? Math.sqrt(sumSq / n) : 0.0;
-        remoteSpec = spec;
+    private void syncRemoteControlState() {
+        remoteRunning=running;remoteCalibrating=calibrating;remotePaused=processPaused;remoteAutoMode=isAutoMode();
+        remotePeak=sessionPeak;remoteRms=n>0?Math.sqrt(sumSq/n):0;remoteSpec=spec;
+        if(running&&startMs>0){long now=SystemClock.elapsedRealtime();remoteProcessSec=isAutoMode()?getProcessElapsedMs(now)/1000.0:Math.max(0,now-startMs)/1000.0;}
+        remoteTimelineState=running?(calibrating?"CALIBRATING":timelineState()):"STOPPED";
+        refreshRemoteMetadata();refreshRemoteEventsJson();
+    }
 
-        remoteProcessSec = startMs > 0L
-                ? (
-                        isAutoMode()
-                                ? getProcessElapsedMs(now) / 1000.0
-                                : Math.max(0.0, (now - startMs) / 1000.0)
-                )
-                : 0.0;
-
-        remoteUnit = currentTaggedUnit(now);
-        remoteTimelineState = calibrating ? "CALIBRATING" : timelineState();
-
-        refreshRemoteMetadata();
-
-        if (now - remoteLastPointMs >= 50L) {
-            remoteLastPointMs = now;
-
-            synchronized (remotePoints) {
-                remotePoints.addLast(new double[]{x, y, z, t});
-
-                while (remotePoints.size() > 160) {
-                    remotePoints.removeFirst();
-                }
-            }
+    private void updateRemoteSnapshot(long now,float x,float y,float z,double t) {
+        remoteRunning=running;remoteCalibrating=calibrating;remotePaused=processPaused;remoteAutoMode=isAutoMode();
+        remoteX=x;remoteY=y;remoteZ=z;remoteTotal=t;remotePeak=sessionPeak;remoteRms=n>0?Math.sqrt(sumSq/n):0;remoteSpec=spec;
+        remoteProcessSec=startMs>0?(isAutoMode()?getProcessElapsedMs(now)/1000.0:Math.max(0,now-startMs)/1000.0):0;
+        remoteUnit=currentTaggedUnit(now);remoteTimelineState=calibrating?"CALIBRATING":timelineState();
+        if(now-remoteMetadataMs>=500){remoteMetadataMs=now;refreshRemoteMetadata();}
+        synchronized(remotePoints){
+            if(remoteBucket==null||t>remoteBucket[3])remoteBucket=new double[]{x,y,z,t,now};
+            if(remoteLastPointMs==0||now-remoteLastPointMs>=50){remotePoints.addLast(remoteBucket);remoteBucket=null;remoteLastPointMs=now;while(remotePoints.size()>160)remotePoints.removeFirst();}
         }
     }
 
     private String buildRemoteStateJson() {
-        StringBuilder p = new StringBuilder("[");
-
-        synchronized (remotePoints) {
-            int i = 0;
-
-            for (double[] q : remotePoints) {
-                if (i++ > 0) p.append(",");
-
-                p.append("[")
-                        .append(String.format(Locale.US, "%.5f", q[0]))
-                        .append(",")
-                        .append(String.format(Locale.US, "%.5f", q[1]))
-                        .append(",")
-                        .append(String.format(Locale.US, "%.5f", q[2]))
-                        .append(",")
-                        .append(String.format(Locale.US, "%.5f", q[3]))
-                        .append(",")
-                        .append(String.format(Locale.US, "%.5f", q[3]))
-                        .append("]");
-            }
-        }
-
-        p.append("]");
-
-        return "{"
-                + "\"running\":" + remoteRunning + ","
-                + "\"calibrating\":" + remoteCalibrating + ","
-                + "\"paused\":" + remotePaused + ","
-                + "\"line\":\"" + remoteJsonEscape(remoteLine) + "\","
-                + "\"equipment\":\"" + remoteJsonEscape(remoteEquipment) + "\","
-                + "\"process\":\"" + remoteJsonEscape(remoteProcess) + "\","
-                + "\"unit\":\"" + remoteJsonEscape(remoteUnit) + "\","
-                + "\"timelineState\":\"" + remoteJsonEscape(remoteTimelineState) + "\","
-                + "\"x\":" + String.format(Locale.US, "%.6f", remoteX) + ","
-                + "\"y\":" + String.format(Locale.US, "%.6f", remoteY) + ","
-                + "\"z\":" + String.format(Locale.US, "%.6f", remoteZ) + ","
-                + "\"total\":" + String.format(Locale.US, "%.6f", remoteTotal) + ","
-                + "\"peak\":" + String.format(Locale.US, "%.6f", remotePeak) + ","
-                + "\"rms\":" + String.format(Locale.US, "%.6f", remoteRms) + ","
-                + "\"spec\":" + String.format(Locale.US, "%.6f", remoteSpec) + ","
-                + "\"processSec\":" + String.format(Locale.US, "%.3f", remoteProcessSec) + ","
-                + "\"mcscTotal\":" + String.format(Locale.US, "%.3f", remoteMcscTotal) + ","
-                + "\"lastImpact\":\"" + remoteJsonEscape(remoteLastImpact) + "\","
-                + "\"lastCommand\":\"" + remoteJsonEscape(remoteLastCommand) + "\","
-                + "\"mcsc\":" + remoteMcscJson + ","
-                + "\"events\":" + remoteEventsJson + ","
-                + "\"points\":" + p
-                + "}";
+        try{
+            org.json.JSONObject j=new org.json.JSONObject();
+            j.put("running",remoteRunning);j.put("calibrating",remoteCalibrating);j.put("paused",remotePaused);j.put("autoMode",remoteAutoMode);
+            j.put("line",remoteLine);j.put("equipment",remoteEquipment);j.put("process",remoteProcess);j.put("unit",remoteUnit);j.put("timelineState",remoteTimelineState);
+            j.put("x",remoteX);j.put("y",remoteY);j.put("z",remoteZ);j.put("total",remoteTotal);j.put("peak",remotePeak);j.put("rms",remoteRms);j.put("spec",remoteSpec);
+            j.put("processSec",remoteProcessSec);j.put("mcscTotal",remoteMcscTotal);j.put("lastImpact",remoteLastImpact);j.put("lastCommand",remoteLastCommand);j.put("runId",remoteRunId);
+            j.put("controlAllowed",remoteServer!=null&&remoteServer.isControlAllowed());j.put("health",new org.json.JSONObject(unifiedHealthJson()));
+            j.put("mcsc",new org.json.JSONArray(remoteMcscJson));j.put("events",new org.json.JSONArray(remoteEventsJson));
+            org.json.JSONArray points=new org.json.JSONArray();
+            synchronized(remotePoints){for(double[] p:remotePoints){org.json.JSONArray a=new org.json.JSONArray();for(double v:p)a.put(v);points.put(a);}}
+            j.put("points",points);return j.toString();
+        }catch(Exception e){return "{\"running\":false,\"error\":\"SNAPSHOT_FAILED\"}";}
     }
 
     private void showRemoteMonitorDialog() {
         refreshRemoteMetadata();
-
-        if (remoteServer == null) {
-            remoteServer = new RemoteMonitorServer(
-                    this::buildRemoteStateJson,
-                    this::handleRemoteCommand
-            );
+        if(remoteServer==null)remoteServer=new RemoteMonitorServer(this,this::buildRemoteStateJson,this::handleRemoteCommand);
+        if(!remoteServer.isRunning()&&!remoteServer.start()){
+            new LocalizedDialog(this).setTitle("REMOTE MONITOR").setMessage("Remote Monitor 서버를 시작하지 못했습니다.\n").setPositiveButton("확인",null).show();return;
         }
-
-        if (!remoteServer.isRunning()) {
-            boolean ok = remoteServer.start();
-
-            if (!ok) {
-                new android.app.AlertDialog.Builder(this)
-                        .setTitle("REMOTE MONITOR")
-                        .setMessage(
-                                "Remote Monitor 서버를 시작하지 못했습니다.\n"
-                                        + "Wi-Fi/Hotspot 상태를 확인한 뒤 다시 시도해주세요."
-                        )
-                        .setPositiveButton("확인", null)
-                        .show();
-                return;
-            }
-        }
-
-        if (remoteButton != null) {
-            remoteButton.setText("REMOTE ON");
-            remoteButton.setBackground(bg(Color.rgb(0, 145, 105), 14));
-        }
-
-        java.util.List<String> urls = remoteServer.getAccessUrls();
-        String primary = remoteServer.getPrimaryUrl();
-
-        StringBuilder msg = new StringBuilder();
-        msg.append("READ ONLY · 같은 Wi-Fi 또는 Hotspot에서 사용\n\n");
-
-        if (urls.isEmpty()) {
-            msg.append("IP 주소를 찾지 못했습니다.\n")
-                    .append("두 폰을 같은 Wi-Fi/Hotspot에 연결한 뒤 다시 열어주세요.");
-        } else {
-            msg.append("다른 폰의 Chrome/Samsung Internet에서 아래 주소를 여세요.\n\n");
-
-            for (String u : urls) {
-                msg.append(u).append("\n");
-            }
-        }
-
-        msg.append("\nAccess Code : ")
-                .append(remoteServer.getToken())
-                .append("\nControl PIN : ")
-                .append(remoteServer.getControlPin())
-                .append("\n\nSTART / PAUSE / RESUME / STOP 원격조작 가능");
-
-        android.app.AlertDialog dialog =
-                new android.app.AlertDialog.Builder(this)
-                        .setTitle("REMOTE MONITOR · LIVE")
-                        .setMessage(msg.toString())
-                        .setPositiveButton(
-                                "COPY URL",
-                                (d, w) -> {
-                                    if (primary == null || primary.isEmpty()) return;
-
-                                    android.content.ClipboardManager cm =
-                                            (android.content.ClipboardManager)
-                                                    getSystemService(CLIPBOARD_SERVICE);
-
-                                    cm.setPrimaryClip(
-                                            android.content.ClipData.newPlainText(
-                                                    "Remote Monitor URL",
-                                                    primary
-                                            )
-                                    );
-
-                                    Toast.makeText(
-                                            this,
-                                            "Remote URL 복사 완료",
-                                            Toast.LENGTH_SHORT
-                                    ).show();
-                                }
-                        )
-                        .setNeutralButton(
-                                "STOP REMOTE",
-                                (d, w) -> stopRemoteMonitor()
-                        )
-                        .setNegativeButton("닫기", null)
-                        .create();
-
-        dialog.show();
+        syncRemoteControlState();
+        if(remoteButton!=null){remoteButton.setText("REMOTE ON");remoteButton.setBackground(bg(Color.rgb(0,145,105),14));}
+        LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(16),dp(8),dp(16),dp(10));
+        box.addView(tv("원격 조작은 측정 앱만 제어합니다. 설비의 동작이나 비상정지는 제어하지 않습니다.",13,Color.DKGRAY));
+        StringBuilder links=new StringBuilder();for(String u:remoteServer.getAccessUrls())links.append(u).append("\n\n");
+        TextView addresses=new LocalizedTextView(this);addresses.setText(links.length()==0?AppLanguage.text("접속 주소를 찾지 못했습니다. 같은 Wi-Fi 또는 핫스팟에 연결하세요."):links.toString());addresses.setTextSize(14);addresses.setTextIsSelectable(true);box.addView(addresses);
+        CheckBox enable=new LocalizedCheckBox(this);enable.setText("원격 측정 조작 허용");enable.setChecked(remoteServer.isControlAllowed());box.addView(enable);
+        TextView pin=new LocalizedTextView(this);pin.setText(AppLanguage.text("조작 PIN")+" : "+remoteServer.getControlPin());pin.setTextSize(18);pin.setTypeface(null,1);pin.setVisibility(enable.isChecked()?View.VISIBLE:View.GONE);box.addView(pin);
+        enable.setOnCheckedChangeListener((b,on)->{remoteServer.setControlAllowed(on);pin.setVisibility(on?View.VISIBLE:View.GONE);});
+        box.addView(tv("허용된 사내망 또는 전용 핫스팟에서만 사용하세요. 이 로컬 연결은 HTTP이며 암호화되지 않습니다.",11,Color.DKGRAY));
+        ScrollView scroll=new ScrollView(this);scroll.addView(box);
+        new LocalizedDialog(this).setTitle("REMOTE MONITOR · LIVE").setView(scroll)
+            .setPositiveButton("COPY URL",(d,w)->{String u=remoteServer.getPrimaryUrl();if(u.isEmpty())return;android.content.ClipboardManager cm=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);if(cm!=null)cm.setPrimaryClip(android.content.ClipData.newPlainText("Remote",u));LocalizedToast.makeText(this,"Remote URL 복사 완료",Toast.LENGTH_SHORT).show();})
+            .setNeutralButton("STOP REMOTE",(d,w)->stopRemoteMonitor()).setNegativeButton("닫기",null).show();
     }
+
 
     private void logRemoteCommand(String command, String result) {
         remoteLastCommand = command + " · " + result;
@@ -3864,7 +3772,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         try {
             java.io.File f = new java.io.File(
                     eventDir(),
-                    "REMOTE_COMMAND_LOG.csv"
+                    "REMOTE_COMMAND_LOG_" + remoteRunId + ".csv"
             );
 
             boolean newFile = !f.exists();
@@ -3908,73 +3816,42 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
         } catch (Exception ignored) {}
     }
 
-    private String handleRemoteCommand(String command) {
-        final String cmd = command == null
-                ? ""
-                : command.trim().toLowerCase(Locale.US);
-
-        if (!cmd.equals("start")
-                && !cmd.equals("stop")
-                && !cmd.equals("pause")
-                && !cmd.equals("resume")) {
-            logRemoteCommand(cmd, "REJECTED");
-            return "UNKNOWN COMMAND";
-        }
-
-        runOnUiThread(() -> {
-            String result = "UNKNOWN";
-
-            try {
-                if ("start".equals(cmd)) {
-                    if (running) {
-                        result = "ALREADY RUNNING";
-                    } else {
-                        startMon();
-                        result = "STARTED";
-                    }
-
-                } else if ("stop".equals(cmd)) {
-                    if (!running) {
-                        result = "ALREADY STOPPED";
-                    } else {
-                        stopMon();
-                        result = "STOPPED";
-                    }
-
-                } else if ("pause".equals(cmd)) {
-                    if (!running || !isAutoMode()) {
-                        result = "PAUSE NOT AVAILABLE";
-                    } else if (processPaused) {
-                        result = "ALREADY PAUSED";
-                    } else {
-                        toggleProcessPause();
-                        result = "PAUSED";
-                    }
-
-                } else if ("resume".equals(cmd)) {
-                    if (!running || !isAutoMode()) {
-                        result = "RESUME NOT AVAILABLE";
-                    } else if (!processPaused) {
-                        result = "ALREADY RUNNING";
-                    } else {
-                        toggleProcessPause();
-                        result = "RESUMED";
-                    }
+    private String handleRemoteCommand(String command, String expectedRun, String requestId) {
+        final String cmd=command==null?"":command.toLowerCase(Locale.US);
+        final java.util.concurrent.CountDownLatch done=new java.util.concurrent.CountDownLatch(1);
+        final java.util.concurrent.atomic.AtomicInteger state=new java.util.concurrent.atomic.AtomicInteger(0);
+        final java.util.concurrent.atomic.AtomicReference<String> response=new java.util.concurrent.atomic.AtomicReference<>("{\"ok\":false,\"message\":\"APP BUSY - NOT EXECUTED\"}");
+        runOnUiThread(()->{
+            if(!state.compareAndSet(0,1)){done.countDown();return;}
+            boolean ok=false;String result="UNKNOWN COMMAND";
+            try{
+                if(remoteServer==null||!remoteServer.isRunning()||!remoteServer.isControlAllowed())result="CONTROL DISABLED";
+                else if(!remoteRunId.equals(expectedRun))result="STALE SESSION";
+                else if("start".equals(cmd)){
+                    if(running){ok=true;result="ALREADY RUNNING";}else{startMon();ok=running;result=ok?"STARTED":"START FAILED";}
+                }else if("stop".equals(cmd)){
+                    if(!running){ok=true;result="ALREADY STOPPED";}else{stopMon();ok=!running;result=ok?"STOPPED":"STOP FAILED";}
+                }else if("pause".equals(cmd)){
+                    if(!running||!isAutoMode()||calibrating)result="PAUSE NOT AVAILABLE";
+                    else if(processPaused){ok=true;result="ALREADY PAUSED";}else{toggleProcessPause();ok=processPaused;result=ok?"PAUSED":"PAUSE FAILED";}
+                }else if("resume".equals(cmd)){
+                    if(!running||!isAutoMode()||calibrating)result="RESUME NOT AVAILABLE";
+                    else if(!processPaused){ok=true;result="ALREADY RUNNING";}else{toggleProcessPause();ok=!processPaused;result=ok?"RESUMED":"RESUME FAILED";}
                 }
-
-                refreshRemoteMetadata();
-                logRemoteCommand(cmd.toUpperCase(Locale.US), result);
-
-            } catch (Exception e) {
-                logRemoteCommand(
-                        cmd.toUpperCase(Locale.US),
-                        "ERROR"
-                );
-            }
+                syncRemoteControlState();
+                org.json.JSONObject r=new org.json.JSONObject();r.put("ok",ok);r.put("message",result);r.put("requestId",requestId);r.put("runId",remoteRunId);response.set(r.toString());
+                logRemoteCommand(cmd.toUpperCase(Locale.US)+" / "+requestId,result);
+            }catch(Exception ex){response.set("{\"ok\":false,\"message\":\"ERROR\"}");logRemoteCommand(cmd.toUpperCase(Locale.US),"ERROR");}
+            finally{done.countDown();}
         });
-
-        return "COMMAND SENT · " + cmd.toUpperCase(Locale.US);
+        try{
+            if(!done.await(5,java.util.concurrent.TimeUnit.SECONDS)){
+                if(!state.compareAndSet(0,2))return "{\"ok\":false,\"message\":\"Result unknown - check current state; command will not be resent automatically.\"}";
+            }
+        }catch(InterruptedException ex){state.compareAndSet(0,2);Thread.currentThread().interrupt();}
+        return response.get();
     }
+
 
     private void stopRemoteMonitor() {
         if (remoteServer != null) {
@@ -3986,7 +3863,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
             remoteButton.setBackground(bg(Color.rgb(0, 125, 110), 14));
         }
 
-        Toast.makeText(
+        LocalizedToast.makeText(
                 this,
                 "Remote Monitor 종료",
                 Toast.LENGTH_SHORT
@@ -4228,7 +4105,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
     @Override
     public void onBackPressed() {
         if (running) {
-            new android.app.AlertDialog.Builder(this)
+            new LocalizedDialog(this)
                     .setTitle("측정 중")
                     .setMessage("연속 측정 중에는 화면을 종료하지 마세요.\n먼저 STOP & ANALYZE를 눌러 측정을 종료해주세요.")
                     .setPositiveButton("확인", null)
@@ -4449,8 +4326,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                     p.setColor(Color.rgb(55, 75, 92));
                     float tw = p.measureText(label);
                     float cx = (x1 + x2) / 2f;
-                    c.drawText(
-                            label,
+                    c.drawText(AppLanguage.text(
+                            label),
                             Math.max(x1 + 1f, cx - tw / 2f),
                             mid + 4f,
                             p
@@ -4474,8 +4351,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                             "OVER +%.1fs",
                             Math.max(0.0, processSec - total)
                     );
-                    c.drawText(
-                            overText,
+                    c.drawText(AppLanguage.text(
+                            overText),
                             Math.min(
                                     right - p.measureText(overText) - 2f,
                                     mcscEndX + 4f
@@ -4522,16 +4399,16 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
                 p.setTextSize(14f);
                 p.setColor(Color.rgb(175, 45, 50));
-                c.drawText("#" + r.no, Math.max(1f, x - 9f), top - 12f, p);
+                c.drawText(AppLanguage.text("#" + r.no), Math.max(1f, x - 9f), top - 12f, p);
             }
 
             p.setTextSize(13f);
             p.setColor(Color.DKGRAY);
-            c.drawText("0s", left, getHeight() - 4f, p);
+            c.drawText(AppLanguage.text("0s"), left, getHeight() - 4f, p);
 
             String endText = String.format(Locale.US, "%.1fs", displayEnd);
-            c.drawText(
-                    endText,
+            c.drawText(AppLanguage.text(
+                    endText),
                     Math.max(left, right - p.measureText(endText)),
                     getHeight() - 4f,
                     p
@@ -4568,10 +4445,10 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
 
                 p.setColor(Color.DKGRAY);
                 p.setTextSize(18f);
-                c.drawText(a.label, left, y, p);
+                c.drawText(AppLanguage.text(a.label), left, y, p);
 
                 p.setTextSize(15f);
-                c.drawText(
+                c.drawText(AppLanguage.text(
                         String.format(
                                 Locale.US,
                                 "AVG %.2f · MIN %.2f · MAX %.2f · RMS %.2f · %d events · %.1fs",
@@ -4581,7 +4458,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                                 a.avgRms(),
                                 a.count,
                                 a.durationSec
-                        ),
+                        )),
                         left,
                         y + 24f,
                         p
@@ -4641,7 +4518,7 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 float labelY = y + 19f;
 
                 String label = "#" + r.no + " " + r.process + " / " + r.unit;
-                c.drawText(label, left, labelY, p);
+                c.drawText(AppLanguage.text(label), left, labelY, p);
 
                 float barTop = y + 25f;
                 float barBottom = Math.min(getHeight() - 4f, barTop + 12f);
@@ -4651,8 +4528,8 @@ public class ProcessShockActivity extends Activity implements SensorEventListene
                 c.drawRoundRect(left, barTop, left + barWidth, barBottom, 8f, 8f, p);
 
                 p.setColor(Color.DKGRAY);
-                c.drawText(
-                        String.format(Locale.US, "%.2f", r.peak),
+                c.drawText(AppLanguage.text(
+                        String.format(Locale.US, "%.2f", r.peak)),
                         Math.min(right - 60f, left + barWidth + 8f),
                         barBottom,
                         p

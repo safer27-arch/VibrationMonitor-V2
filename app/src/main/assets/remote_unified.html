@@ -1,0 +1,73 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vibration Monitor</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eef3f7;color:#10263b;font:16px system-ui,sans-serif}.wrap{max-width:820px;margin:auto;padding:12px}.head{background:#10263b;color:white;border-radius:16px;padding:15px}.top{display:flex;gap:8px;align-items:center;justify-content:space-between}.top h1{font-size:21px;margin:0}.lang{font-size:16px;padding:8px;border-radius:9px;max-width:130px}.sub{font-size:12px;color:#b9cfe1;margin-top:6px}.status{font-weight:700;margin-top:10px}.live{color:#1fe9a2}.warn{color:#ffd279}.err{color:#ff858d}.row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}.card,.wide{background:white;border-radius:12px;padding:11px;overflow-wrap:anywhere}.wide{margin-top:8px}.k{font-size:12px;color:#556879}.v{font-size:24px;font-weight:700;margin-top:3px}.small{font-size:12px;color:#5b6e7f;line-height:1.5}canvas{display:block;width:100%;height:230px;margin-top:8px}#tl{height:120px}.ctl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.btn{border:0;border-radius:10px;padding:14px 8px;font-weight:700;color:white;font-size:14px;min-height:48px}.start{background:#00885f}.pause{background:#a56b05}.resume{background:#28698f}.stop{background:#b72e35}button:disabled{opacity:.4;cursor:not-allowed}input{width:100%;padding:10px;border:1px solid #b7c7d2;border-radius:8px;font-size:16px}#ctlmsg{padding:8px;background:#edf4f9;border-radius:8px;min-height:30px}#stale{background:#fff0d2;padding:8px;border-radius:8px;display:none;margin-top:8px}.health{display:flex;gap:14px;flex-wrap:wrap}#screenlang{color:#10263b}.legend{font-size:12px;display:flex;gap:14px;flex-wrap:wrap}.foot{font-size:11px;color:#657986;padding:12px}.envelope{margin:8px 0;color:#566d81}
+</style></head><body><main class="wrap">
+<header class="head"><div class="top"><h1 data-i18n="PROCESS SHOCK REMOTE">PROCESS SHOCK REMOTE</h1><select id="screenlang" class="lang" aria-label="Language"><option value="ko">🇰🇷 한국어</option><option value="en">🇬🇧 English</option><option value="pl">🇵🇱 Polski</option></select></div>
+<div class="sub">V5.0 · <span data-i18n="VIEW + CONTROL · Wi-Fi / Hotspot">VIEW + CONTROL · Wi-Fi / Hotspot</span></div>
+<div id="st" class="status warn">CONNECTING...</div><div id="age" class="sub">-</div></header>
+<section class="wide"><b id="ctx">-</b><div class="small" id="clock">-</div><div id="stale" data-i18n="SENSOR DATA STALE">SENSOR DATA STALE</div></section>
+<section class="row"><div class="card"><div class="k" data-i18n="TOTAL">TOTAL</div><div class="v" id="total">0.000</div></div><div class="card"><div class="k" data-i18n="PEAK">PEAK</div><div class="v" id="peak">0.000</div></div><div class="card"><div class="k">RMS</div><div class="v" id="rms">0.000</div></div></section>
+<div class="small" style="text-align:right;margin:5px">m/s²</div>
+<section class="row"><div class="card">X <b id="x">0.000</b></div><div class="card">Y <b id="y">0.000</b></div><div class="card">Z <b id="z">0.000</b></div></section>
+<section class="wide"><b data-i18n="LIVE VIBRATION">LIVE VIBRATION</b><div class="legend"><span style="color:#1679bc">X</span><span style="color:#007b53">Y</span><span style="color:#9b6100">Z</span><span style="color:#704bbe">TOTAL</span><span style="color:#be303b">SPEC</span></div><canvas id="g"></canvas><div class="small envelope" id="graphnote">-</div></section>
+<section class="wide"><b data-i18n="MCSC / IMPACT TIMELINE">MCSC / IMPACT TIMELINE</b><div class="small" id="mcscTxt">-</div><canvas id="tl"></canvas></section>
+<section class="wide"><b data-i18n="측정 진단">DIAGNOSTICS</b><div id="diag" class="small health">-</div></section>
+<section class="wide"><b data-i18n="REMOTE CONTROL">REMOTE CONTROL</b><p class="small" data-i18n="ONLY APP MEASUREMENT - NOT MACHINE CONTROL">ONLY APP MEASUREMENT - NOT MACHINE CONTROL</p><p id="permission" class="small">-</p><input type="password" id="pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Control PIN" autocomplete="off">
+<div class="ctl"><button id="start" class="btn start" data-i18n="START MONITORING" disabled>START MONITORING</button><button id="pause" class="btn pause" data-i18n="PAUSE" disabled>PAUSE</button><button id="resume" class="btn resume" data-i18n="RESUME" disabled>RESUME</button><button id="stop" class="btn stop" data-i18n="STOP & ANALYZE" disabled>STOP & ANALYZE</button></div><p class="small" data-i18n="COMMAND RESULT">COMMAND RESULT</p><div id="ctlmsg" class="small">-</div></section>
+<section class="wide small"><b data-i18n="LAST IMPACT">LAST IMPACT</b><div id="last">-</div></section><footer class="foot" data-i18n="허용된 사내망 또는 전용 핫스팟에서만 사용하세요. 이 로컬 연결은 HTTP이며 암호화되지 않습니다.">Private network only. Local HTTP is not encrypted.</footer>
+</main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id), key=new URLSearchParams(location.search).get('k')||'';
+let code='ko',explicit=false;try{const v=localStorage.getItem('vm_unified_language');if(['ko','en','pl'].includes(v)){code=v;explicit=true;}}catch(e){}
+let dictionary={},templates=[],fragments=[],fragmentRegex=null,lastState=null,lastOk=0,startedAt=performance.now(),busy=false,failures=0,lastCommandMessage='-',localeLoaded=false;
+const fmt=/%(?:\d+\$)?[-#+ 0,(]*\d*(?:\.\d+)?[a-zA-Z%]/g;
+const escapeRe=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+function prepareCatalog(j){dictionary=j;templates=[];fragments=[];for(const s of Object.keys(j).sort((a,b)=>b.length-a.length)){
+ const matches=[...s.matchAll(fmt)];if(matches.length){let r='^',at=0;for(const m of matches){r+=escapeRe(s.slice(at,m.index))+(m[0]==='%%'?'%':'([^\\r\\n]*?)');at=m.index+m[0].length;}r+=escapeRe(s.slice(at))+'$';templates.push({pattern:new RegExp(r),values:j[s]});}
+ else if(s.length>=4&&!s.includes('\n')){const left=/^[A-Za-z0-9]/.test(s)?'(?<![A-Za-z0-9_])':'';const right=/[A-Za-z0-9]$/.test(s)?'(?![A-Za-z0-9_])':'';fragments.push([s,left+escapeRe(s)+right]);}}fragmentRegex=fragments.length?new RegExp(fragments.map(x=>x[1]).join('|'),'g'):null;
+}
+function t(v){const s=String(v??''),idx=code==='en'?1:code==='pl'?2:0;if(dictionary[s])return dictionary[s][idx];for(const item of templates){const m=item.pattern.exec(s);if(m){let i=1;return item.values[idx].replace(fmt,p=>p==='%%'?'%':(m[i++]??p));}}
+ if(s.includes('\n'))return s.split('\n').map(t).join('\n');
+ if(!fragments.length)return s;return s.replace(fragmentRegex,k=>dictionary[k]?.[idx]??k);}
+function localize(){document.documentElement.lang=code;$('screenlang').value=code;document.querySelectorAll('[data-i18n]').forEach(e=>e.textContent=t(e.dataset.i18n));$('pin').placeholder=t('6-digit Control PIN');$('ctlmsg').textContent=t(lastCommandMessage);if(lastState)render(lastState);}
+$('screenlang').addEventListener('change',()=>{code=$('screenlang').value;explicit=true;try{localStorage.setItem('vm_unified_language',code);}catch(e){}localize();});
+async function request(path,options={},timeout=3000){const abort=new AbortController(),id=setTimeout(()=>abort.abort(),timeout);try{return await fetch(path,{...options,signal:abort.signal,cache:'no-store'});}finally{clearTimeout(id);}}
+function status(){const age=lastOk?(performance.now()-lastOk)/1000:(performance.now()-startedAt)/1000;const connected=!!lastOk&&age<3;let text=connected?(lastState?.calibrating?'● CALIBRATING':lastState?.running?'● LIVE MONITORING':'● READY / STOPPED'):(age<6?'● RECONNECTING...':'● CONNECTION LOST · RETRYING');$('st').textContent=t(text);$('st').className='status '+(connected?'live':age<6?'warn':'err');
+ $('age').textContent=code==='ko'?`최근 수신: ${lastOk?age.toFixed(1)+'초 전':'대기 중'}`:code==='pl'?`Ostatni odbiór: ${lastOk?age.toFixed(1)+' s temu':'oczekiwanie'}`:`Last received: ${lastOk?age.toFixed(1)+'s ago':'waiting'}`;
+ const h=lastState?.health||{},stale=!!lastState?.running&&!lastState?.calibrating&&(Number(h.sampleAgeMs)<0||Number(h.sampleAgeMs)+age*1000>2000);$('stale').style.display=stale?'block':'none';
+ const permit=connected&&lastState?.controlAllowed&&!busy;
+ $('start').disabled=!permit||!!lastState?.running;$('stop').disabled=!permit||!lastState?.running;
+ $('pause').disabled=!permit||!lastState?.running||!!lastState?.calibrating||!lastState?.autoMode||!!lastState?.paused;
+ $('resume').disabled=!permit||!lastState?.running||!!lastState?.calibrating||!lastState?.autoMode||!lastState?.paused;
+ $('permission').textContent=lastState?.controlAllowed?t('Control PIN required · STOP asks confirmation'):t('CONTROL DISABLED');
+}
+const number=(x,dp=3)=>Number.isFinite(Number(x))?Number(x).toFixed(dp):'-';
+function fit(c,height){const d=Math.min(devicePixelRatio||1,3);c.width=Math.max(300,c.clientWidth*d);c.height=height*d;return d;}
+function graph(s){const c=$('g'),d=fit(c,230),q=c.getContext('2d'),w=c.width,h=c.height,L=35*d,R=w-10*d,T=12*d,B=h-25*d,pts=s.points||[];q.clearRect(0,0,w,h);let max=Math.max(3,Number(s.spec)*1.5);for(const p of pts)max=Math.max(max,Number(p[3])*1.1);q.font=`${10*d}px sans-serif`;
+ for(let i=0;i<=4;i++){const v=max*i/4,y=B-(B-T)*i/4;q.strokeStyle='#dfe7ed';q.lineWidth=d;q.beginPath();q.moveTo(L,y);q.lineTo(R,y);q.stroke();q.fillStyle='#526777';q.fillText(v.toFixed(1),0,y+3*d);}
+ const sy=B-(B-T)*Number(s.spec)/max;q.strokeStyle='#be303b';q.lineWidth=1.3*d;q.beginPath();q.moveTo(L,sy);q.lineTo(R,sy);q.stroke();
+ const first=pts.length?Number(pts[0][4]):0,last=pts.length?Number(pts[pts.length-1][4]):1,span=Math.max(1,last-first),colors=['#1679bc','#007b53','#9b6100','#704bbe'];
+ for(let axis=0;axis<4;axis++){q.strokeStyle=colors[axis];q.lineWidth=(axis===3?2.3:1.2)*d;q.beginPath();pts.forEach((p,i)=>{const x=L+(R-L)*(Number(p[4])-first)/span,y=B-(B-T)*Math.abs(Number(p[axis]))/max;if(i===0)q.moveTo(x,y);else q.lineTo(x,y);});q.stroke();}
+ q.fillStyle='#526777';q.fillText('0s',L,h-5*d);q.fillText((span/1000).toFixed(1)+'s',R-34*d,h-5*d);
+ $('graphnote').textContent=code==='ko'?'원격 그래프는 50ms 구간 최대 합성값 시점의 표본입니다. 전체 표본은 측정폰 RAW에 유지됩니다.':code==='pl'?'Wykres: próbki o największej wartości w oknach 50 ms. Pełne próbki pozostają w RAW telefonu pomiarowego.':'Remote graph: peak-total samples in 50 ms windows. Full samples remain in the measurement phone RAW file.';
+}
+function timeline(s){const c=$('tl'),d=fit(c,120),q=c.getContext('2d'),w=c.width,h=c.height,L=6*d,R=w-6*d,T=22*d,B=90*d,units=s.mcsc||[],total=Number(s.mcscTotal)||0,ps=Number(s.processSec)||0;let end=Math.max(.1,total,ps>total?ps+Math.max(.5,(ps-total)*.15):total);q.clearRect(0,0,w,h);let acc=0;q.font=`${10*d}px sans-serif`;
+ units.forEach((u,i)=>{const a=acc;acc+=Number(u.sec);const x=L+(R-L)*a/end,x2=L+(R-L)*acc/end;q.fillStyle=ps>=a&&ps<acc?'#c5e3f3':(i%2?'#e8eff4':'#f3f7fa');q.fillRect(x,T,x2-x,B-T);q.strokeStyle='#9dacb7';q.lineWidth=d;q.strokeRect(x,T,x2-x,B-T);if(x2-x>25*d){q.fillStyle='#314e61';q.fillText(String(u.name).slice(0,8),x+2*d,T+35*d);}});
+ if(ps>total){const x=L+(R-L)*total/end;q.fillStyle='#ffedcd';q.fillRect(x,T,R-x,B-T);q.fillStyle='#906019';q.fillText((code==='ko'?'초과 ':code==='pl'?'POZA ':'OVER ')+(ps-total).toFixed(1)+'s',Math.max(L,R-85*d),T+14*d);}
+ for(const e of s.events||[]){const x=L+(R-L)*Math.min(1,Number(e.t)/end);q.strokeStyle='#be303b';q.lineWidth=2*d;q.beginPath();q.moveTo(x,T-8*d);q.lineTo(x,B);q.stroke();}
+ const x=L+(R-L)*Math.min(1,ps/end);q.strokeStyle=s.paused?'#ad7618':'#00885f';q.lineWidth=3*d;q.beginPath();q.moveTo(x,T-14*d);q.lineTo(x,B+4*d);q.stroke();q.fillStyle='#00885f';q.beginPath();q.moveTo(x,T-3*d);q.lineTo(x-5*d,T-13*d);q.lineTo(x+5*d,T-13*d);q.closePath();q.fill();q.fillStyle='#425c6f';q.fillText('0s',L,h-8*d);q.fillText(end.toFixed(1)+'s',R-45*d,h-8*d);}
+function render(s){$('ctx').textContent=[s.line,s.equipment,s.process,s.unit].map(x=>String(x||'-')).join(' / ');$('clock').textContent=t('PROCESS')+' '+number(s.processSec,1)+'s / MCSC '+number(s.mcscTotal,1)+'s · '+t(s.timelineState||'-');for(const k of ['x','y','z','total','peak','rms'])$(k).textContent=number(s[k]);$('mcscTxt').textContent=t('UNIT')+' '+(s.unit||'-')+' · '+number(s.processSec,1)+' / '+number(s.mcscTotal,1)+'s';$('last').textContent=s.lastImpact||'-';
+ const h=s.health||{};$('diag').textContent=`${number(h.hz,1)} Hz · ${h.samples??0} ${code==='ko'?'샘플':code==='pl'?'próbek':'samples'} · ${code==='ko'?'최대 간격':code==='pl'?'maks. odstęp':'max interval'} ${number(h.maxGapMs,2)} ms`;graph(s);timeline(s);status();}
+async function command(cmd){if(busy||!lastState)return;const pin=$('pin').value.trim();if(!/^\d{6}$/.test(pin)){lastCommandMessage='Control PIN 6자리를 입력하세요.';localize();return;}
+ if(cmd==='start'&&!confirm(t('Start a new measurement? Keep the phone still for sensor stabilization.')))return;
+ if(cmd==='stop'&&!confirm(t('STOP & ANALYZE를 원격 실행하시겠습니까?')))return;
+ busy=true;status();const id=Date.now().toString(36)+'-'+Array.from(crypto.getRandomValues(new Uint8Array(10)),b=>b.toString(16).padStart(2,'0')).join('');
+ try{const r=await request('/control?k='+encodeURIComponent(key),{method:'POST',headers:{'Content-Type':'application/json','X-Control-Pin':pin},body:JSON.stringify({cmd,id,run:lastState.runId})},8000);const j=await r.json();lastCommandMessage=(j.message||'ERROR');$('ctlmsg').textContent=(j.ok?'✓ ':'! ')+t(lastCommandMessage);}
+ catch(e){lastCommandMessage='Result unknown - check current state; command will not be resent automatically.';$('ctlmsg').textContent=t(lastCommandMessage);}
+ finally{busy=false;status();}}
+for(const k of ['start','pause','resume','stop'])$(k).addEventListener('click',()=>command(k));
+async function poll(){try{const r=await request('/state?k='+encodeURIComponent(key));if(!r.ok)throw new Error(r.status);const s=await r.json();lastOk=performance.now();failures=0;lastState=s;if(!explicit&&code!==s.health?.language&&['ko','en','pl'].includes(s.health?.language)){code=s.health.language;localize();}render(s);}catch(e){failures++;status();}finally{setTimeout(poll,document.hidden?1000:250);}}
+async function begin(){try{const r=await request('/i18n?k='+encodeURIComponent(key));if(r.ok){prepareCatalog(await r.json());localeLoaded=true;}}catch(e){}localize();poll();}
+setInterval(status,250);window.addEventListener('resize',()=>{if(lastState)render(lastState);});begin();
+</script></body></html>
